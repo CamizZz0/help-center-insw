@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import { pool } from "./config/db.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -13,11 +14,23 @@ app.use(
 
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Help Center API berjalan",
-    });
+app.get("/api/health", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT NOW() AS database_time");
+
+        res.status(200).json({
+            success: true,
+            message: "API dan PostgreSQL berhasil terhubung",
+            databaseTime: result.rows[0].database_time,
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Gagal terhubung ke PostgreSQL",
+        });
+    }
 });
 
 app.listen(PORT, () => {
