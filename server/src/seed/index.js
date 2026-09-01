@@ -1,6 +1,7 @@
 import "dotenv/config";
+import { eq } from "drizzle-orm";
 import { db, pool } from "../config/db.js";
-import { categories } from "../models/schema.js";
+import { categories, subcategories } from "../models/schema.js";
 
 const categoryData = [
     {
@@ -18,33 +19,144 @@ const categoryData = [
         sortOrder: 2,
     },
     {
-        name: "Registrasi",
+        name: "Registrasi & Akun",
         slug: "registrasi",
         description: "Informasi registrasi dan pengelolaan akun INSW.",
         icon: "user-round-plus",
         sortOrder: 3,
     },
     {
-        name: "Portal NSW",
+        name: "Portal INSW",
         slug: "portal-nsw",
-        description: "Informasi penggunaan layanan dan fitur Portal NSW.",
-        icon: "globe",
+        description: "Informasi penggunaan layanan dan fitur Portal INSW.",
+        icon: "monitor-globe",
         sortOrder: 4,
+    },
+    {
+        name: "Perizinan & Rekomendasi",
+        slug: "perizinan-rekomendasi",
+        description: "Informasi perizinan dan rekomendasi perdagangan.",
+        icon: "clipboard-check",
+        sortOrder: 5,
+    },
+    {
+        name: "Fasilitas & Kawasan",
+        slug: "fasilitas-kawasan",
+        description: "Informasi fasilitas perdagangan dan kawasan.",
+        icon: "building",
+        sortOrder: 6,
+    },
+    {
+        name: "Layanan Lainnya",
+        slug: "layanan-lainnya",
+        description: "Informasi layanan INSW lainnya.",
+        icon: "layout-grid",
+        sortOrder: 7,
     },
 ];
 
-async function seed() {
-    try {
+async function seedCategories() {
+    for (const category of categoryData) {
         await db
             .insert(categories)
-            .values(categoryData)
-            .onConflictDoNothing({
+            .values(category)
+            .onConflictDoUpdate({
                 target: categories.slug,
+                set: {
+                    name: category.name,
+                    description: category.description,
+                    icon: category.icon,
+                    sortOrder: category.sortOrder,
+                    updatedAt: new Date(),
+                },
             });
+    }
 
-        console.log("Seed kategori berhasil.");
+    console.log("Seed kategori berhasil.");
+}
+
+async function seedImportSubcategories() {
+    const [importCategory] = await db
+        .select({
+            id: categories.id,
+        })
+        .from(categories)
+        .where(eq(categories.slug, "impor-kepabeanan"))
+        .limit(1);
+
+    if (!importCategory) {
+        throw new Error("Kategori Impor & Kepabeanan tidak ditemukan.");
+    }
+
+    const importSubcategoryData = [
+        {
+            categoryId: importCategory.id,
+            name: "PIB",
+            slug: "pib",
+            description: "Informasi mengenai Pemberitahuan Impor Barang.",
+            icon: "file-text",
+            sortOrder: 1,
+        },
+        {
+            categoryId: importCategory.id,
+            name: "DO Online/SP2",
+            slug: "do-online-sp2",
+            description: "Informasi layanan Delivery Order Online dan SP2.",
+            icon: "file-check",
+            sortOrder: 2,
+        },
+        {
+            categoryId: importCategory.id,
+            name: "SSM QC (Impor–Ekspor)",
+            slug: "ssm-qc-impor-ekspor",
+            description: "Informasi layanan SSM Quarantine Customs.",
+            icon: "globe",
+            sortOrder: 3,
+        },
+        {
+            categoryId: importCategory.id,
+            name: "BTKI 2022",
+            slug: "btki-2022",
+            description: "Informasi Buku Tarif Kepabeanan Indonesia 2022.",
+            icon: "clipboard-check",
+            sortOrder: 4,
+        },
+        {
+            categoryId: importCategory.id,
+            name: "Modul Pertek/Rekom",
+            slug: "modul-pertek-rekom",
+            description: "Informasi modul pertimbangan teknis dan rekomendasi.",
+            icon: "folder",
+            sortOrder: 5,
+        },
+    ];
+
+    for (const subcategory of importSubcategoryData) {
+        await db
+            .insert(subcategories)
+            .values(subcategory)
+            .onConflictDoUpdate({
+                target: subcategories.slug,
+                set: {
+                    categoryId: subcategory.categoryId,
+                    name: subcategory.name,
+                    description: subcategory.description,
+                    icon: subcategory.icon,
+                    sortOrder: subcategory.sortOrder,
+                    updatedAt: new Date(),
+                },
+            });
+    }
+
+    console.log("Seed subkategori Impor berhasil.");
+}
+
+async function seed() {
+    try {
+        await seedCategories();
+        await seedImportSubcategories();
     } catch (error) {
-        console.error("Seed kategori gagal:", error);
+        console.error("Proses seed gagal:", error);
         process.exitCode = 1;
     } finally {
         await pool.end();
