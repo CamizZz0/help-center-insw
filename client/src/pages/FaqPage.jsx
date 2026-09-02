@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { getFaqs } from "../services/api";
+import FaqAccordion from "../components/FaqAccordion";
 
 export default function FaqPage() {
     const [faqs, setFaqs] = useState([]);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [openFaqId, setOpenFaqId] = useState(null);
+
+    function handleToggle(faqId) {
+        setOpenFaqId((currentId) =>
+            currentId === faqId ? null : faqId
+        );
+    }
 
     useEffect(() => {
         async function loadFaqs() {
@@ -49,19 +58,12 @@ export default function FaqPage() {
 
             <div className="mt-8 space-y-4">
                 {faqs.map((faq) => (
-                    <article
+                    <FaqAccordion
                         key={faq.id}
-                        className="rounded-xl border border-slate-200 bg-white p-5"
-                    >
-                        <p className="text-sm text-blue-600">
-                            {faq.category.name} • {faq.subcategory.name} •{" "}
-                            {faq.topic.name}
-                        </p>
-
-                        <h2 className="mt-2 font-semibold text-slate-900">
-                            {faq.question}
-                        </h2>
-                    </article>
+                        faq={faq}
+                        isOpen={openFaqId === faq.id}
+                        onToggle={() => handleToggle(faq.id)}
+                    />
                 ))}
             </div>
         </main>
