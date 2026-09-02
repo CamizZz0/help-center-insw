@@ -1,12 +1,10 @@
-import { Route, Routes } from "react-router";
-import FaqAllPage from "./pages/FaqAllPage";
-import FaqCategoryPage from "./pages/FaqCategoryPage";
+import { Routes, Route } from "react-router-dom";
+import FaqPage from "./pages/FaqPage";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<FaqAllPage />} />
-      <Route path="/faq/:categorySlug" element={<FaqCategoryPage />} />
+      <Route path="/" element={<FaqPage />} />
     </Routes>
   );
 }
