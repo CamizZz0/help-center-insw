@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "node src/seed/index.js"
+    "db:seed": "node src/seed/index.js",
+    "import:faqs": "node src/scripts/importFaqs.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,8 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "sanitize-html": "^2.17.7"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",

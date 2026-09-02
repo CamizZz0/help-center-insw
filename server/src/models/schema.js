@@ -39,6 +39,8 @@ export const categories = pgTable("categories", {
 export const subcategories = pgTable("subcategories", {
     id: serial("id").primaryKey(),
 
+    sourceId: integer("source_id").unique(),
+
     categoryId: integer("category_id")
         .notNull()
         .references(() => categories.id, {
@@ -73,6 +75,8 @@ export const subcategories = pgTable("subcategories", {
 export const faqTopics = pgTable("faq_topics", {
     id: serial("id").primaryKey(),
 
+    sourceId: integer("source_id").unique(),
+
     subcategoryId: integer("subcategory_id")
         .notNull()
         .references(() => subcategories.id, {
@@ -104,6 +108,8 @@ export const faqTopics = pgTable("faq_topics", {
 
 export const faqs = pgTable("faqs", {
     id: serial("id").primaryKey(),
+
+    sourceId: integer("source_id").unique(),
 
     topicId: integer("topic_id")
         .notNull()

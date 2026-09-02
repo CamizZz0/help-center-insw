@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../config/db.js";
-import { categories, subcategories } from "../models/schema.js";
+import { categories, subcategories, faqTopics } from "../models/schema.js";
 
 const categoryData = [
     {
@@ -151,10 +151,68 @@ async function seedImportSubcategories() {
     console.log("Seed subkategori Impor berhasil.");
 }
 
+async function seedPibTopics() {
+    const [pibSubcategory] = await db
+        .select({
+            id: subcategories.id,
+        })
+        .from(subcategories)
+        .where(eq(subcategories.slug, "pib"))
+        .limit(1);
+
+    if (!pibSubcategory) {
+        throw new Error("Subkategori PIB tidak ditemukan.");
+    }
+
+    const pibTopicData = [
+        {
+            subcategoryId: pibSubcategory.id,
+            name: "Pendahuluan PIB",
+            slug: "pendahuluan-pib",
+            description: "Informasi dasar dan pengenalan mengenai PIB.",
+            sortOrder: 1,
+        },
+        {
+            subcategoryId: pibSubcategory.id,
+            name: "Tracking PIB",
+            slug: "tracking-pib",
+            description: "Informasi pemantauan proses dan status pengajuan PIB.",
+            sortOrder: 2,
+        },
+        {
+            subcategoryId: pibSubcategory.id,
+            name: "Reject Dokumen",
+            slug: "reject-dokumen-pib",
+            description: "Informasi penolakan dokumen dan penyelesaian kendala PIB.",
+            sortOrder: 3,
+        },
+    ];
+
+    for (const topic of pibTopicData) {
+        await db
+            .insert(faqTopics)
+            .values(topic)
+            .onConflictDoUpdate({
+                target: faqTopics.slug,
+                set: {
+                    subcategoryId: topic.subcategoryId,
+                    name: topic.name,
+                    description: topic.description,
+                    sortOrder: topic.sortOrder,
+                    isActive: true,
+                    updatedAt: new Date(),
+                },
+            });
+    }
+
+    console.log("Seed topik PIB berhasil.");
+}
+
 async function seed() {
     try {
         await seedCategories();
         await seedImportSubcategories();
+        await seedPibTopics();
     } catch (error) {
         console.error("Proses seed gagal:", error);
         process.exitCode = 1;
