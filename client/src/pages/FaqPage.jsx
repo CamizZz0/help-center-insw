@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { getFaqs } from "../services/api";
 import FaqAccordion from "../components/FaqAccordion";
+import Pagination from "../components/Pagination";
 
 export default function FaqPage() {
     const [faqs, setFaqs] = useState([]);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
+    const [page, setPage] = useState(1);
     const [openFaqId, setOpenFaqId] = useState(null);
 
     function handleToggle(faqId) {
@@ -16,13 +17,24 @@ export default function FaqPage() {
         );
     }
 
+    function handlePageChange(nextPage) {
+        setPage(nextPage);
+        setOpenFaqId(null);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
     useEffect(() => {
         async function loadFaqs() {
             try {
                 setLoading(true);
+                setError("");
 
                 const result = await getFaqs({
-                    page: 1,
+                    page,
                     limit: 6,
                 });
 
@@ -36,7 +48,7 @@ export default function FaqPage() {
         }
 
         loadFaqs();
-    }, []);
+    }, [page]);
 
     if (loading) {
         return <p className="p-8">Memuat FAQ...</p>;
@@ -66,6 +78,14 @@ export default function FaqPage() {
                     />
                 ))}
             </div>
+
+            {meta && (
+                <Pagination
+                    currentPage={meta.page}
+                    totalPages={meta.totalPages}
+                    onPageChange={handlePageChange}
+                />
+            )}
         </main>
     );
 }
