@@ -5,6 +5,7 @@ import { pool } from "./config/db.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import subcategoryRoutes from "./routes/subcategoryRoutes.js";
 import topicRoutes from "./routes/topicRoutes.js";
+import faqRoutes from "./routes/faqRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use("/api/categories", categoryRoutes);
 app.use("/api/subcategories", subcategoryRoutes);
 app.use("/api/topics", topicRoutes);
+app.use("/api/faqs", faqRoutes);
 
 app.get("/api/health", async (req, res) => {
     try {
