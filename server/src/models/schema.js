@@ -70,12 +70,44 @@ export const subcategories = pgTable("subcategories", {
         .notNull(),
 });
 
-export const faqs = pgTable("faqs", {
+export const faqTopics = pgTable("faq_topics", {
     id: serial("id").primaryKey(),
 
     subcategoryId: integer("subcategory_id")
         .notNull()
         .references(() => subcategories.id, {
+            onDelete: "cascade",
+        }),
+
+    name: varchar("name", { length: 150 }).notNull(),
+
+    slug: varchar("slug", { length: 150 }).notNull().unique(),
+
+    description: text("description"),
+
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    isActive: boolean("is_active").notNull().default(true),
+
+    createdAt: timestamp("created_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+});
+
+export const faqs = pgTable("faqs", {
+    id: serial("id").primaryKey(),
+
+    topicId: integer("topic_id")
+        .notNull()
+        .references(() => faqTopics.id, {
             onDelete: "cascade",
         }),
 
