@@ -8,6 +8,7 @@ import FaqAccordion from "../components/FaqAccordion";
 import Pagination from "../components/Pagination";
 import SearchBar from "../components/SearchBar";
 import FaqSidebar from "../components/FaqSidebar";
+import { useParams } from "react-router-dom";
 
 export default function FaqPage() {
     const [faqs, setFaqs] = useState([]);
@@ -21,6 +22,8 @@ export default function FaqPage() {
 
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
+
+    const { categorySlug } = useParams();
 
     function handleToggle(faqId) {
         setOpenFaqId((currentId) =>
@@ -107,6 +110,7 @@ export default function FaqPage() {
 
                         <div className="mt-4">
                             <FaqSidebar
+                                categorySlug={categorySlug}
                                 selectedTopicSlug={selectedTopic?.slug}
                                 onSelectTopic={handleSelectTopic}
                             />

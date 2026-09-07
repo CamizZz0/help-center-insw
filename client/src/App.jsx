@@ -1,12 +1,30 @@
-import { Routes, Route } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+
 import FaqPage from "./pages/FaqPage";
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<FaqPage />} />
+      {/* Sementara diarahkan ke Impor & Kepabeanan.
+          Nanti "/" diganti LandingPage. */}
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to="/faq/impor-kepabeanan"
+            replace
+          />
+        }
+      />
+
+      <Route
+        path="/faq/:categorySlug"
+        element={<FaqPage />}
+      />
     </Routes>
   );
 }
-
-export default App;
