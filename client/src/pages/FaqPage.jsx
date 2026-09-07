@@ -12,6 +12,8 @@ import { useParams } from "react-router-dom";
 import Header from "../components/layout/Header";
 import Breadcrumb from "../components/layout/Breadcrumb";
 import CategoryHero from "../components/layout/CategoryHero";
+import HelpCard from "../components/HelpCard";
+import Footer from "../components/layout/Footer";
 
 const CATEGORY_NAMES = {
     "impor-kepabeanan": "Impor & Kepabeanan",
@@ -194,8 +196,12 @@ export default function FaqPage() {
                             )}
                         </section>
                     </div>
+                    <div className="mt-12">
+                        <HelpCard />
+                    </div>
                 </div>
             </main>
+            <Footer />
         </>
     );
 }
