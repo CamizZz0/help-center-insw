@@ -11,7 +11,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "node src/seed/index.js",
     "import:faqs": "node src/scripts/importFaqs.js",
-    "seed:popular": "node src/scripts/seedPopularFaqs.js"
+    "seed:popular": "node src/scripts/seedPopularFaqs.js",
+    "seed:resources": "node src/scripts/seedResources.js"
   },
   "keywords": [],
   "author": "",
