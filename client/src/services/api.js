@@ -42,6 +42,7 @@ export function getTopicFaqs(
 
 export function getFaqs({
     search = "",
+    popular,
     page = 1,
     limit = 6,
 } = {}) {
@@ -50,6 +51,10 @@ export function getFaqs({
         page: String(page),
         limit: String(limit),
     });
+
+    if (typeof popular === "boolean") {
+        params.set("popular", String(popular));
+    }
 
     return request(`/faqs?${params}`);
 }

@@ -5,6 +5,8 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import CategoryCard from "../components/CategoryCard";
 import HeroSearch from "../components/HeroSearch";
+import GuidesSection from "../components/GuidesSection";
+import PopularFaqSection from "../components/PopularFaqSection";
 
 function extractCategories(result) {
     if (Array.isArray(result?.data)) {
@@ -93,6 +95,10 @@ export default function LandingPage() {
                     )}
                 </section>
             </main>
+
+            <GuidesSection />
+
+            <PopularFaqSection />
 
             <Footer />
         </>
