@@ -139,3 +139,99 @@ export const faqs = pgTable("faqs", {
         .defaultNow()
         .notNull(),
 });
+
+export const guides = pgTable("guides", {
+    id: serial("id").primaryKey(),
+
+    sourceId: integer("source_id").unique(),
+
+    categoryId: integer("category_id")
+        .references(() => categories.id, {
+            onDelete: "set null",
+        }),
+
+    title: varchar("title", {
+        length: 200,
+    }).notNull(),
+
+    slug: varchar("slug", {
+        length: 200,
+    })
+        .notNull()
+        .unique(),
+
+    description: text("description"),
+
+    fileUrl: text("file_url").notNull(),
+
+    thumbnailUrl: text("thumbnail_url"),
+
+    sortOrder: integer("sort_order")
+        .notNull()
+        .default(0),
+
+    isPublished: boolean("is_published")
+        .notNull()
+        .default(true),
+
+    createdAt: timestamp("created_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+});
+
+export const tutorials = pgTable("tutorials", {
+    id: serial("id").primaryKey(),
+
+    sourceId: integer("source_id").unique(),
+
+    categoryId: integer("category_id")
+        .references(() => categories.id, {
+            onDelete: "set null",
+        }),
+
+    title: varchar("title", {
+        length: 200,
+    }).notNull(),
+
+    slug: varchar("slug", {
+        length: 200,
+    })
+        .notNull()
+        .unique(),
+
+    description: text("description"),
+
+    videoUrl: text("video_url").notNull(),
+
+    thumbnailUrl: text("thumbnail_url"),
+
+    durationSeconds: integer("duration_seconds"),
+
+    sortOrder: integer("sort_order")
+        .notNull()
+        .default(0),
+
+    isPublished: boolean("is_published")
+        .notNull()
+        .default(true),
+
+    createdAt: timestamp("created_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+        withTimezone: true,
+    })
+        .defaultNow()
+        .notNull(),
+});

@@ -6,6 +6,8 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import subcategoryRoutes from "./routes/subcategoryRoutes.js";
 import topicRoutes from "./routes/topicRoutes.js";
 import faqRoutes from "./routes/faqRoutes.js";
+import guideRoutes from "./routes/guideRoutes.js";
+import tutorialRoutes from "./routes/tutorialRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -21,6 +23,8 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/subcategories", subcategoryRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/faqs", faqRoutes);
+app.use("/api/guides", guideRoutes);
+app.use("/api/tutorials", tutorialRoutes);
 
 app.get("/api/health", async (req, res) => {
     try {
