@@ -26,7 +26,7 @@ export default function HeroSearch({
         <form
             onSubmit={handleSubmit}
             role="search"
-            className="mx-auto mt-8 flex max-w-2xl overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100"
+            className="mx-auto mt-[14px] flex h-[51px] w-full max-w-[589px] overflow-hidden rounded-[12px] border border-black bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100"
         >
             <input
                 type="search"
@@ -35,13 +35,13 @@ export default function HeroSearch({
                     setKeyword(event.target.value)
                 }
                 placeholder="Cari pertanyaan atau bantuan..."
-                className="min-w-0 flex-1 px-5 py-4 text-slate-900 outline-none"
+                className="min-w-0 flex-1 px-3 text-base text-black outline-none placeholder:text-black/40 md:text-[20px]"
             />
 
             <button
                 type="submit"
                 aria-label="Cari FAQ"
-                className="flex w-16 items-center justify-center border-l border-slate-300 text-[#062E6F] transition hover:bg-blue-50"
+                className="flex w-[51px] shrink-0 items-center justify-center text-[#02275D] transition hover:bg-blue-50"
             >
                 <Search size={23} />
             </button>

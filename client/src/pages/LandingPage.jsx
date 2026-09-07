@@ -7,6 +7,7 @@ import CategoryCard from "../components/CategoryCard";
 import HeroSearch from "../components/HeroSearch";
 import GuidesSection from "../components/GuidesSection";
 import PopularFaqSection from "../components/PopularFaqSection";
+import Breadcrumb from "../components/layout/Breadcrumb";
 
 function extractCategories(result) {
     if (Array.isArray(result?.data)) {
@@ -47,16 +48,13 @@ export default function LandingPage() {
         <>
             <Header />
 
+            <Breadcrumb />
+
             <section className="bg-[#EFF7FF]">
                 <div className="mx-auto max-w-7xl px-6 py-20 text-center">
                     <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
                         Pusat Bantuan
                     </h1>
-
-                    <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-                        Temukan jawaban, panduan, dan informasi
-                        penggunaan layanan INSW.
-                    </p>
 
                     <HeroSearch />
                 </div>
