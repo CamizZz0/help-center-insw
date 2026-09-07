@@ -10,6 +10,18 @@ import SearchBar from "../components/SearchBar";
 import FaqSidebar from "../components/FaqSidebar";
 import { useParams } from "react-router-dom";
 import Header from "../components/layout/Header";
+import Breadcrumb from "../components/layout/Breadcrumb";
+import CategoryHero from "../components/layout/CategoryHero";
+
+const CATEGORY_NAMES = {
+    "impor-kepabeanan": "Impor & Kepabeanan",
+    ekspor: "Ekspor",
+    "registrasi-akun": "Registrasi & Akun",
+    "portal-insw": "Portal INSW",
+    "perizinan-rekomendasi": "Perizinan & Rekomendasi",
+    "fasilitas-kawasan": "Fasilitas & Kawasan",
+    "layanan-lainnya": "Layanan Lainnya",
+};
 
 export default function FaqPage() {
     const [faqs, setFaqs] = useState([]);
@@ -25,6 +37,9 @@ export default function FaqPage() {
     const [search, setSearch] = useState("");
 
     const { categorySlug } = useParams();
+
+    const categoryName =
+        CATEGORY_NAMES[categorySlug] ?? "Kategori FAQ";
 
     function handleToggle(faqId) {
         setOpenFaqId((currentId) =>
@@ -101,6 +116,10 @@ export default function FaqPage() {
     return (
         <>
             <Header />
+
+            <Breadcrumb categoryName={categoryName} />
+
+            <CategoryHero categoryName={categoryName} />
             <main className="min-h-screen bg-slate-50 p-8">
                 <div className="mx-auto max-w-7xl">
                     <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
