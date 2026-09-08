@@ -20,13 +20,24 @@ const CATEGORY_ICONS = {
     "layanan-lainnya": LayoutGrid,
 };
 
+const DEFAULT_TOPICS = {
+    "impor-kepabeanan": "pendahuluan-pib",
+};
+
 export default function CategoryCard({ category }) {
     const Icon =
         CATEGORY_ICONS[category.slug] ?? LayoutGrid;
 
+    const defaultTopic =
+        DEFAULT_TOPICS[category.slug];
+
+    const destination = defaultTopic
+        ? `/faq/${category.slug}?topic=${defaultTopic}`
+        : `/faq/${category.slug}`;
+
     return (
         <Link
-            to={`/faq/${category.slug}`}
+            to={destination}
             className="group flex min-h-28 items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 sm:min-h-32 sm:gap-5 sm:p-6"
         >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 sm:h-12 sm:w-12">

@@ -1,6 +1,15 @@
-import { and, asc, count, eq } from "drizzle-orm";
-import { db } from "../config/db.js";
 import {
+    and,
+    asc,
+    count,
+    eq,
+} from "drizzle-orm";
+
+import { db } from "../config/db.js";
+
+import {
+    categories,
+    subcategories,
     faqTopics,
     faqs,
 } from "../models/schema.js";
@@ -21,48 +30,105 @@ export async function getFaqsByTopic(req, res) {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Parameter pagination tidak valid",
+                message:
+                    "Parameter pagination tidak valid",
                 errors: [
                     {
                         field: "page",
-                        message: "Page harus berupa bilangan bulat minimal 1",
+                        message:
+                            "Page harus berupa bilangan bulat minimal 1",
                     },
                     {
                         field: "limit",
-                        message: "Limit harus bernilai antara 1 sampai 50",
+                        message:
+                            "Limit harus bernilai antara 1 sampai 50",
                     },
                 ],
             });
         }
 
-        const [topic] = await db
+        /*
+         * Mengambil topik beserta subkategori
+         * dan kategori induknya.
+         */
+        const [topicContext] = await db
             .select({
-                id: faqTopics.id,
-                name: faqTopics.name,
-                slug: faqTopics.slug,
-                description: faqTopics.description,
+                topic: {
+                    id: faqTopics.id,
+                    name: faqTopics.name,
+                    slug: faqTopics.slug,
+                    description:
+                        faqTopics.description,
+                },
+
+                subcategory: {
+                    id: subcategories.id,
+                    name: subcategories.name,
+                    slug: subcategories.slug,
+                },
+
+                category: {
+                    id: categories.id,
+                    name: categories.name,
+                    slug: categories.slug,
+                },
             })
             .from(faqTopics)
+            .innerJoin(
+                subcategories,
+                eq(
+                    faqTopics.subcategoryId,
+                    subcategories.id
+                )
+            )
+            .innerJoin(
+                categories,
+                eq(
+                    subcategories.categoryId,
+                    categories.id
+                )
+            )
             .where(
                 and(
-                    eq(faqTopics.slug, topicSlug),
-                    eq(faqTopics.isActive, true),
-                ),
+                    eq(
+                        faqTopics.slug,
+                        topicSlug
+                    ),
+                    eq(
+                        faqTopics.isActive,
+                        true
+                    ),
+                    eq(
+                        subcategories.isActive,
+                        true
+                    ),
+                    eq(
+                        categories.isActive,
+                        true
+                    )
+                )
             )
             .limit(1);
 
-        if (!topic) {
+        if (!topicContext) {
             return res.status(404).json({
                 success: false,
-                message: "Topik FAQ tidak ditemukan",
+                message:
+                    "Topik FAQ tidak ditemukan",
             });
         }
 
         const filter = and(
-            eq(faqs.topicId, topic.id),
-            eq(faqs.isPublished, true),
+            eq(
+                faqs.topicId,
+                topicContext.topic.id
+            ),
+            eq(faqs.isPublished, true)
         );
 
+        /*
+         * Menghitung seluruh FAQ pada topik.
+         */
         const [{ totalItems }] = await db
             .select({
                 totalItems: count(),
@@ -71,8 +137,14 @@ export async function getFaqsByTopic(req, res) {
             .where(filter);
 
         const offset = (page - 1) * limit;
-        const totalPages = Math.ceil(totalItems / limit);
+        const totalPages = Math.ceil(
+            totalItems / limit
+        );
 
+        /*
+         * Mengambil FAQ dan menyertakan
+         * breadcrumb lengkap.
+         */
         const faqData = await db
             .select({
                 id: faqs.id,
@@ -80,8 +152,44 @@ export async function getFaqsByTopic(req, res) {
                 answer: faqs.answer,
                 isPopular: faqs.isPopular,
                 sortOrder: faqs.sortOrder,
+
+                topic: {
+                    name: faqTopics.name,
+                    slug: faqTopics.slug,
+                },
+
+                subcategory: {
+                    name: subcategories.name,
+                    slug: subcategories.slug,
+                },
+
+                category: {
+                    name: categories.name,
+                    slug: categories.slug,
+                },
             })
             .from(faqs)
+            .innerJoin(
+                faqTopics,
+                eq(
+                    faqs.topicId,
+                    faqTopics.id
+                )
+            )
+            .innerJoin(
+                subcategories,
+                eq(
+                    faqTopics.subcategoryId,
+                    subcategories.id
+                )
+            )
+            .innerJoin(
+                categories,
+                eq(
+                    subcategories.categoryId,
+                    categories.id
+                )
+            )
             .where(filter)
             .orderBy(asc(faqs.sortOrder))
             .limit(limit)
@@ -91,7 +199,11 @@ export async function getFaqsByTopic(req, res) {
             success: true,
             message: "FAQ berhasil diambil",
             data: {
-                topic,
+                topic: topicContext.topic,
+                subcategory:
+                    topicContext.subcategory,
+                category:
+                    topicContext.category,
                 faqs: faqData,
             },
             meta: {
@@ -99,16 +211,21 @@ export async function getFaqsByTopic(req, res) {
                 limit,
                 totalItems,
                 totalPages,
-                hasNextPage: page < totalPages,
+                hasNextPage:
+                    page < totalPages,
                 hasPreviousPage: page > 1,
             },
         });
     } catch (error) {
-        console.error("Gagal mengambil FAQ:", error);
+        console.error(
+            "Gagal mengambil FAQ berdasarkan topik:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            message: "Terjadi kesalahan saat mengambil FAQ",
+            message:
+                "Terjadi kesalahan saat mengambil FAQ",
         });
     }
 }

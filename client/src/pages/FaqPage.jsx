@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import {
+    useParams,
+    useSearchParams,
+} from "react-router-dom";
 
 import {
     getFaqs,
@@ -22,28 +25,69 @@ const CATEGORY_NAMES = {
     ekspor: "Ekspor",
     "registrasi-akun": "Registrasi & Akun",
     "portal-insw": "Portal INSW",
-    "perizinan-rekomendasi": "Perizinan & Rekomendasi",
+    "perizinan-rekomendasi":
+        "Perizinan & Rekomendasi",
     "fasilitas-kawasan": "Fasilitas & Kawasan",
     "layanan-lainnya": "Layanan Lainnya",
 };
 
+const DEFAULT_TOPIC_BY_CATEGORY = {
+    "impor-kepabeanan": "pendahuluan-pib",
+};
+
+const DEFAULT_TOPIC_NAMES = {
+    "pendahuluan-pib": "Pendahuluan PIB",
+};
+
+function extractFaqList(result) {
+    const possibleLists = [
+        result?.data,
+        result?.data?.faqs,
+        result?.data?.items,
+        result?.faqs,
+        result?.items,
+    ];
+
+    return (
+        possibleLists.find((value) =>
+            Array.isArray(value)
+        ) ?? []
+    );
+}
+
 export default function FaqPage() {
+    const { categorySlug } = useParams();
+
+    const [searchParams, setSearchParams] =
+        useSearchParams();
+
+    const topicSlug = searchParams.get("topic");
+
     const [faqs, setFaqs] = useState([]);
     const [meta, setMeta] = useState(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     const [page, setPage] = useState(1);
-    const [openFaqId, setOpenFaqId] = useState(null);
-    const [selectedTopic, setSelectedTopic] = useState(null);
+    const [openFaqId, setOpenFaqId] =
+        useState(null);
 
-    const [searchInput, setSearchInput] = useState("");
+    const [
+        selectedTopicName,
+        setSelectedTopicName,
+    ] = useState(
+        DEFAULT_TOPIC_NAMES[topicSlug] ?? ""
+    );
+
+    const [searchInput, setSearchInput] =
+        useState("");
+
     const [search, setSearch] = useState("");
 
-    const { categorySlug } = useParams();
-
     const categoryName =
-        CATEGORY_NAMES[categorySlug] ?? "Kategori FAQ";
+        CATEGORY_NAMES[categorySlug] ??
+        "Kategori FAQ";
 
     function handleToggle(faqId) {
         setOpenFaqId((currentId) =>
@@ -62,13 +106,65 @@ export default function FaqPage() {
     }
 
     function handleSelectTopic(topic) {
-        setSelectedTopic(topic);
+        setSelectedTopicName(topic.name);
+
+        setSearchParams({
+            topic: topic.slug,
+        });
+
         setPage(1);
         setOpenFaqId(null);
         setSearchInput("");
         setSearch("");
     }
 
+    /*
+     * Memberikan topik default pada kategori.
+     * Impor & Kepabeanan otomatis membuka
+     * Pendahuluan PIB.
+     */
+    useEffect(() => {
+        const defaultTopic =
+            DEFAULT_TOPIC_BY_CATEGORY[
+            categorySlug
+            ];
+
+        if (!topicSlug && defaultTopic) {
+            setSearchParams(
+                {
+                    topic: defaultTopic,
+                },
+                {
+                    replace: true,
+                }
+            );
+        }
+    }, [
+        categorySlug,
+        topicSlug,
+        setSearchParams,
+    ]);
+
+    /*
+     * Menyesuaikan judul ketika URL topik berubah.
+     */
+    useEffect(() => {
+        if (!topicSlug) {
+            setSelectedTopicName("");
+            return;
+        }
+
+        const defaultName =
+            DEFAULT_TOPIC_NAMES[topicSlug];
+
+        if (defaultName) {
+            setSelectedTopicName(defaultName);
+        }
+    }, [topicSlug]);
+
+    /*
+     * Debounce pencarian selama 400 ms.
+     */
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             setPage(1);
@@ -79,8 +175,26 @@ export default function FaqPage() {
         return () => clearTimeout(timeoutId);
     }, [searchInput]);
 
+    /*
+     * Mengambil data FAQ.
+     */
     useEffect(() => {
+        let ignoreResult = false;
+
         async function loadFaqs() {
+            /*
+             * Menunggu URL topik default dipasang
+             * agar tidak mengambil semua FAQ.
+             */
+            const defaultTopic =
+                DEFAULT_TOPIC_BY_CATEGORY[
+                categorySlug
+                ];
+
+            if (!topicSlug && defaultTopic) {
+                return;
+            }
+
             try {
                 setLoading(true);
                 setError("");
@@ -93,9 +207,9 @@ export default function FaqPage() {
                         page,
                         limit: 6,
                     });
-                } else if (selectedTopic) {
+                } else if (topicSlug) {
                     result = await getTopicFaqs(
-                        selectedTopic.slug,
+                        topicSlug,
                         {
                             page,
                             limit: 6,
@@ -108,32 +222,61 @@ export default function FaqPage() {
                     });
                 }
 
-                setFaqs(
-                    Array.isArray(result?.data)
-                        ? result.data
-                        : []
-                );
+                if (ignoreResult) {
+                    return;
+                }
 
+                const faqList =
+                    extractFaqList(result);
+
+                setFaqs(faqList);
                 setMeta(result?.meta ?? null);
+
+                if (
+                    topicSlug &&
+                    faqList[0]?.topic?.name
+                ) {
+                    setSelectedTopicName(
+                        faqList[0].topic.name
+                    );
+                }
             } catch (err) {
-                setError(
-                    err.message || "Gagal mengambil data FAQ."
-                );
+                if (!ignoreResult) {
+                    setError(
+                        err.message ||
+                        "Gagal mengambil data FAQ."
+                    );
+                }
             } finally {
-                setLoading(false);
+                if (!ignoreResult) {
+                    setLoading(false);
+                }
             }
         }
 
         loadFaqs();
-    }, [page, search, selectedTopic?.slug]);
+
+        return () => {
+            ignoreResult = true;
+        };
+    }, [
+        categorySlug,
+        page,
+        search,
+        topicSlug,
+    ]);
 
     return (
         <>
             <Header />
 
-            <Breadcrumb categoryName={categoryName} />
+            <Breadcrumb
+                categoryName={categoryName}
+            />
 
-            <CategoryHero categoryName={categoryName} />
+            <CategoryHero
+                categoryName={categoryName}
+            />
 
             <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
                 <div className="mx-auto max-w-7xl">
@@ -141,7 +284,9 @@ export default function FaqPage() {
                         <div className="min-w-0">
                             <SearchBar
                                 value={searchInput}
-                                onChange={setSearchInput}
+                                onChange={
+                                    setSearchInput
+                                }
                                 onClear={() =>
                                     setSearchInput("")
                                 }
@@ -150,9 +295,11 @@ export default function FaqPage() {
 
                             <div className="mt-4">
                                 <FaqSidebar
-                                    categorySlug={categorySlug}
+                                    categorySlug={
+                                        categorySlug
+                                    }
                                     selectedTopicSlug={
-                                        selectedTopic?.slug
+                                        topicSlug
                                     }
                                     onSelectTopic={
                                         handleSelectTopic
@@ -165,15 +312,17 @@ export default function FaqPage() {
                             <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                                 {search
                                     ? "Hasil Pencarian"
-                                    : selectedTopic?.name ??
-                                    "Semua FAQ"}
+                                    : selectedTopicName ||
+                                    "Pilih Topik FAQ"}
                             </h1>
 
                             <p className="mt-2 text-sm text-slate-600 sm:text-base">
                                 {search
-                                    ? `${meta?.totalItems ?? 0
+                                    ? `${meta?.totalItems ??
+                                    0
                                     } hasil untuk “${search}”`
-                                    : `Total FAQ: ${meta?.totalItems ?? 0
+                                    : `Total FAQ: ${meta?.totalItems ??
+                                    0
                                     }`}
                             </p>
 
@@ -189,38 +338,54 @@ export default function FaqPage() {
                                         {error}
                                     </p>
                                 </div>
-                            ) : faqs.length === 0 ? (
+                            ) : faqs.length ===
+                                0 ? (
                                 <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-center sm:mt-8 sm:p-8">
                                     <h2 className="font-semibold text-slate-900">
-                                        FAQ tidak ditemukan
+                                        FAQ tidak
+                                        ditemukan
                                     </h2>
 
                                     <p className="mt-2 text-sm text-slate-600 sm:text-base">
-                                        Coba pilih topik atau kata
-                                        kunci lain.
+                                        Coba pilih topik
+                                        atau kata kunci
+                                        lain.
                                     </p>
                                 </div>
                             ) : (
                                 <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
-                                    {faqs.map((faq) => (
-                                        <FaqAccordion
-                                            key={faq.id}
-                                            faq={faq}
-                                            isOpen={
-                                                openFaqId === faq.id
-                                            }
-                                            onToggle={() =>
-                                                handleToggle(faq.id)
-                                            }
-                                        />
-                                    ))}
+                                    {faqs.map(
+                                        (faq) => (
+                                            <FaqAccordion
+                                                key={
+                                                    faq.id
+                                                }
+                                                faq={
+                                                    faq
+                                                }
+                                                isOpen={
+                                                    openFaqId ===
+                                                    faq.id
+                                                }
+                                                onToggle={() =>
+                                                    handleToggle(
+                                                        faq.id
+                                                    )
+                                                }
+                                            />
+                                        )
+                                    )}
                                 </div>
                             )}
 
                             {!loading && meta && (
                                 <Pagination
-                                    currentPage={meta.page}
-                                    totalPages={meta.totalPages}
+                                    currentPage={
+                                        meta.page
+                                    }
+                                    totalPages={
+                                        meta.totalPages
+                                    }
                                     onPageChange={
                                         handlePageChange
                                     }
