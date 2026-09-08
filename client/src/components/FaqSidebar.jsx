@@ -36,6 +36,7 @@ function formatSlug(slug = "") {
 
 export default function FaqSidebar({
     categorySlug,
+    selectedSubcategorySlug,
     selectedTopicSlug,
     onSelectTopic,
 }) {
@@ -107,6 +108,64 @@ export default function FaqSidebar({
         }
     }, [categorySlug]);
 
+    useEffect(() => {
+        if (
+            !selectedSubcategorySlug ||
+            subcategories.length === 0
+        ) {
+            return;
+        }
+
+        const subcategoryExists = subcategories.some(
+            (subcategory) =>
+                subcategory.slug ===
+                selectedSubcategorySlug
+        );
+
+        if (!subcategoryExists) {
+            return;
+        }
+
+        let ignoreResult = false;
+
+        async function openSelectedSubcategory() {
+            try {
+                setLoadingTopics(true);
+                setError("");
+                setOpenSubcategorySlug(
+                    selectedSubcategorySlug
+                );
+
+                const result = await getTopics(
+                    selectedSubcategorySlug
+                );
+
+                if (!ignoreResult) {
+                    setTopics(
+                        extractList(result, "topics")
+                    );
+                }
+            } catch (err) {
+                if (!ignoreResult) {
+                    setError(
+                        err.message ||
+                        "Gagal mengambil topik."
+                    );
+                }
+            } finally {
+                if (!ignoreResult) {
+                    setLoadingTopics(false);
+                }
+            }
+        }
+
+        openSelectedSubcategory();
+
+        return () => {
+            ignoreResult = true;
+        };
+    }, [selectedSubcategorySlug, subcategories]);
+
     async function handleSubcategoryClick(subcategory) {
         if (
             openSubcategorySlug === subcategory.slug
@@ -173,8 +232,8 @@ export default function FaqSidebar({
                     <ChevronDown
                         size={19}
                         className={`transition-transform ${isMobileOpen
-                                ? "rotate-180"
-                                : ""
+                            ? "rotate-180"
+                            : ""
                             }`}
                     />
                 </button>
@@ -212,8 +271,8 @@ export default function FaqSidebar({
                                                 )
                                             }
                                             className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${isOpen
-                                                    ? "bg-blue-50 font-semibold text-blue-700"
-                                                    : "font-medium text-slate-700 hover:bg-slate-50"
+                                                ? "bg-blue-50 font-semibold text-blue-700"
+                                                : "font-medium text-slate-700 hover:bg-slate-50"
                                                 }`}
                                         >
                                             <span className="min-w-0 break-words">
@@ -264,9 +323,9 @@ export default function FaqSidebar({
                                                                     )
                                                                 }
                                                                 className={`block w-full rounded-md px-3 py-2 text-left text-sm transition ${selectedTopicSlug ===
-                                                                        topic.slug
-                                                                        ? "bg-blue-600 font-medium text-white"
-                                                                        : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+                                                                    topic.slug
+                                                                    ? "bg-blue-600 font-medium text-white"
+                                                                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                                                                     }`}
                                                             >
                                                                 {

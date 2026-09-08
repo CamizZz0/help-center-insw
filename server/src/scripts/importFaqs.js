@@ -1,33 +1,73 @@
 import "dotenv/config";
 import fs from "node:fs/promises";
 import sanitizeHtml from "sanitize-html";
-import { eq } from "drizzle-orm";
-import { db, pool } from "../config/db.js";
+import {
+    eq,
+    or,
+} from "drizzle-orm";
+
+import {
+    db,
+    pool,
+} from "../config/db.js";
+
 import {
     subcategories,
     faqTopics,
     faqs,
 } from "../models/schema.js";
 
-const filePath = new URL(
-    "../data/import/pib.json",
-    import.meta.url,
-);
+const importSources = [
+    {
+        fileName: "pib.json",
+        subcategorySlug: "pib",
 
-const topicNameMapping = {
-    "Penjelasan PIB": {
-        name: "Pendahuluan PIB",
-        slug: "pendahuluan-pib",
+        topicNameMapping: {
+            "Penjelasan PIB": {
+                name: "Pendahuluan PIB",
+                slug: "pendahuluan-pib",
+            },
+
+            "Tracking PIB": {
+                name: "Tracking PIB",
+                slug: "tracking-pib",
+            },
+
+            "Reject Dokumen": {
+                name: "Reject Dokumen",
+                slug: "reject-dokumen-pib",
+            },
+        },
     },
-    "Tracking PIB": {
-        name: "Tracking PIB",
-        slug: "tracking-pib",
+
+    {
+        fileName: "do-online-sp2.json",
+        subcategorySlug: "do-online-sp2",
+
+        topicNameMapping: {
+            "SP2 Online": {
+                name: "SP2 Online",
+                slug: "sp2-online",
+            },
+
+            "DO ONLINE": {
+                name: "DO Online",
+                slug: "do-online",
+            },
+        },
     },
-    "Reject Dokumen": {
-        name: "Reject Dokumen",
-        slug: "reject-dokumen-pib",
-    },
-};
+];
+
+function createSlug(value = "") {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, " dan ")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
 
 function cleanAnswer(html) {
     return sanitizeHtml(html || "", {
@@ -42,13 +82,36 @@ function cleanAnswer(html) {
             "ol",
             "li",
             "a",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "th",
+            "td",
         ],
 
         allowedAttributes: {
-            a: ["href", "target", "rel"],
+            a: [
+                "href",
+                "target",
+                "rel",
+            ],
+            table: ["class"],
+            th: [
+                "colspan",
+                "rowspan",
+            ],
+            td: [
+                "colspan",
+                "rowspan",
+            ],
         },
 
-        allowedSchemes: ["http", "https", "mailto"],
+        allowedSchemes: [
+            "http",
+            "https",
+            "mailto",
+        ],
 
         transformTags: {
             a: (tagName, attributes) => ({
@@ -63,124 +126,344 @@ function cleanAnswer(html) {
     });
 }
 
-async function importFaqs() {
-    try {
-        const fileContent = await fs.readFile(filePath, "utf-8");
-        const payload = JSON.parse(fileContent);
+async function findLocalSubcategory(
+    tx,
+    subcategorySlug
+) {
+    const [subcategory] = await tx
+        .select({
+            id: subcategories.id,
+            slug: subcategories.slug,
+        })
+        .from(subcategories)
+        .where(
+            eq(
+                subcategories.slug,
+                subcategorySlug
+            )
+        )
+        .limit(1);
 
-        if (payload.code !== "01" || !Array.isArray(payload.data)) {
-            throw new Error("Format response PIB tidak valid.");
-        }
+    return subcategory;
+}
 
-        let importedTopics = 0;
-        let importedFaqs = 0;
+async function saveTopic(
+    tx,
+    {
+        sourceTopic,
+        localSubcategory,
+        mappedTopic,
+        topicIndex,
+    }
+) {
+    const sourceId =
+        sourceTopic.kd_subkategori_faq;
 
-        await db.transaction(async (tx) => {
-            for (const sourceSubcategory of payload.data) {
-                const [localSubcategory] = await tx
-                    .select({
-                        id: subcategories.id,
-                    })
-                    .from(subcategories)
-                    .where(eq(subcategories.slug, "pib"))
-                    .limit(1);
+    const existingCondition =
+        sourceId !== null &&
+            sourceId !== undefined
+            ? or(
+                eq(
+                    faqTopics.sourceId,
+                    sourceId
+                ),
+                eq(
+                    faqTopics.slug,
+                    mappedTopic.slug
+                )
+            )
+            : eq(
+                faqTopics.slug,
+                mappedTopic.slug
+            );
 
-                if (!localSubcategory) {
-                    throw new Error(
-                        "Subkategori PIB belum tersedia. Jalankan db:seed dahulu.",
-                    );
-                }
+    const [existingTopic] = await tx
+        .select({
+            id: faqTopics.id,
+        })
+        .from(faqTopics)
+        .where(existingCondition)
+        .limit(1);
 
-                await tx
-                    .update(subcategories)
-                    .set({
-                        sourceId: sourceSubcategory.kd_kategori_faq,
-                        updatedAt: new Date(),
-                    })
-                    .where(eq(subcategories.id, localSubcategory.id));
+    const topicValues = {
+        sourceId,
+        subcategoryId:
+            localSubcategory.id,
+        name: mappedTopic.name,
+        slug: mappedTopic.slug,
+        description: `Informasi mengenai ${mappedTopic.name}.`,
+        sortOrder: topicIndex + 1,
+        isActive: true,
+        updatedAt: new Date(),
+    };
 
-                for (const [topicIndex, sourceTopic] of (
-                    sourceSubcategory.subkategori || []
-                ).entries()) {
-                    const faqList = sourceTopic.listFaq || [];
+    if (existingTopic) {
+        const [updatedTopic] = await tx
+            .update(faqTopics)
+            .set(topicValues)
+            .where(
+                eq(
+                    faqTopics.id,
+                    existingTopic.id
+                )
+            )
+            .returning({
+                id: faqTopics.id,
+            });
 
-                    // Topik kosong seperti Analis Point tidak dimasukkan.
-                    if (faqList.length === 0) {
-                        continue;
-                    }
+        return updatedTopic;
+    }
 
-                    const mappedTopic = topicNameMapping[sourceTopic.ur] || {
-                        name: sourceTopic.ur,
-                        slug: `topik-${sourceTopic.kd_subkategori_faq}`,
-                    };
-
-                    const [savedTopic] = await tx
-                        .insert(faqTopics)
-                        .values({
-                            sourceId: sourceTopic.kd_subkategori_faq,
-                            subcategoryId: localSubcategory.id,
-                            name: mappedTopic.name,
-                            slug: mappedTopic.slug,
-                            description: `Informasi mengenai ${mappedTopic.name}.`,
-                            sortOrder: topicIndex + 1,
-                            isActive: true,
-                        })
-                        .onConflictDoUpdate({
-                            target: faqTopics.slug,
-                            set: {
-                                sourceId: sourceTopic.kd_subkategori_faq,
-                                subcategoryId: localSubcategory.id,
-                                name: mappedTopic.name,
-                                description: `Informasi mengenai ${mappedTopic.name}.`,
-                                sortOrder: topicIndex + 1,
-                                isActive: true,
-                                updatedAt: new Date(),
-                            },
-                        })
-                        .returning({
-                            id: faqTopics.id,
-                        });
-
-                    importedTopics += 1;
-
-                    for (const [faqIndex, sourceFaq] of faqList.entries()) {
-                        const rawAnswer =
-                            sourceFaq.jawaban || sourceFaq.ur || "";
-
-                        await tx
-                            .insert(faqs)
-                            .values({
-                                sourceId: sourceFaq.id_pusatbantuan,
-                                topicId: savedTopic.id,
-                                question: sourceFaq.header.trim(),
-                                answer: cleanAnswer(rawAnswer),
-                                isPopular: false,
-                                sortOrder: faqIndex + 1,
-                                isPublished: true,
-                            })
-                            .onConflictDoUpdate({
-                                target: faqs.sourceId,
-                                set: {
-                                    topicId: savedTopic.id,
-                                    question: sourceFaq.header.trim(),
-                                    answer: cleanAnswer(rawAnswer),
-                                    sortOrder: faqIndex + 1,
-                                    isPublished: true,
-                                    updatedAt: new Date(),
-                                },
-                            });
-
-                        importedFaqs += 1;
-                    }
-                }
-            }
+    const [insertedTopic] = await tx
+        .insert(faqTopics)
+        .values(topicValues)
+        .returning({
+            id: faqTopics.id,
         });
 
-        console.log("Import FAQ PIB berhasil.");
-        console.log(`Topik diproses: ${importedTopics}`);
-        console.log(`FAQ diproses: ${importedFaqs}`);
+    return insertedTopic;
+}
+
+async function saveFaq(
+    tx,
+    {
+        sourceFaq,
+        savedTopic,
+        faqIndex,
+    }
+) {
+    const sourceId =
+        sourceFaq.id_pusatbantuan;
+
+    if (
+        sourceId === null ||
+        sourceId === undefined
+    ) {
+        throw new Error(
+            "FAQ sumber tidak mempunyai id_pusatbantuan."
+        );
+    }
+
+    const question = String(
+        sourceFaq.header ||
+        sourceFaq.ur ||
+        ""
+    ).trim();
+
+    if (!question) {
+        throw new Error(
+            `FAQ sourceId ${sourceId} tidak mempunyai pertanyaan.`
+        );
+    }
+
+    const faqValues = {
+        sourceId,
+        topicId: savedTopic.id,
+        question,
+        answer: cleanAnswer(
+            sourceFaq.jawaban
+        ),
+        isPopular: false,
+        sortOrder: faqIndex + 1,
+        isPublished: true,
+        updatedAt: new Date(),
+    };
+
+    const [existingFaq] = await tx
+        .select({
+            id: faqs.id,
+        })
+        .from(faqs)
+        .where(eq(faqs.sourceId, sourceId))
+        .limit(1);
+
+    if (existingFaq) {
+        await tx
+            .update(faqs)
+            .set(faqValues)
+            .where(
+                eq(
+                    faqs.id,
+                    existingFaq.id
+                )
+            );
+
+        return;
+    }
+
+    await tx
+        .insert(faqs)
+        .values(faqValues);
+}
+
+async function importFaqs() {
+    let importedSubcategories = 0;
+    let importedTopics = 0;
+    let importedFaqs = 0;
+
+    try {
+        await db.transaction(
+            async (tx) => {
+                for (const importSource of importSources) {
+                    const filePath = new URL(
+                        `../data/import/${importSource.fileName}`,
+                        import.meta.url
+                    );
+
+                    const fileContent =
+                        await fs.readFile(
+                            filePath,
+                            "utf-8"
+                        );
+
+                    const payload =
+                        JSON.parse(fileContent);
+
+                    if (
+                        payload.code !== "01" ||
+                        !Array.isArray(
+                            payload.data
+                        )
+                    ) {
+                        throw new Error(
+                            `Format file ${importSource.fileName} tidak valid.`
+                        );
+                    }
+
+                    const localSubcategory =
+                        await findLocalSubcategory(
+                            tx,
+                            importSource.subcategorySlug
+                        );
+
+                    if (!localSubcategory) {
+                        throw new Error(
+                            `Subkategori "${importSource.subcategorySlug}" belum tersedia. Jalankan seed terlebih dahulu.`
+                        );
+                    }
+
+                    for (
+                        const sourceSubcategory
+                        of payload.data
+                    ) {
+                        await tx
+                            .update(subcategories)
+                            .set({
+                                sourceId:
+                                    sourceSubcategory.kd_kategori_faq,
+                                updatedAt:
+                                    new Date(),
+                            })
+                            .where(
+                                eq(
+                                    subcategories.id,
+                                    localSubcategory.id
+                                )
+                            );
+
+                        importedSubcategories += 1;
+
+                        const sourceTopics =
+                            Array.isArray(
+                                sourceSubcategory.subkategori
+                            )
+                                ? sourceSubcategory.subkategori
+                                : [];
+
+                        for (
+                            const [
+                                topicIndex,
+                                sourceTopic,
+                            ] of sourceTopics.entries()
+                        ) {
+                            const faqList =
+                                Array.isArray(
+                                    sourceTopic.listFaq
+                                )
+                                    ? sourceTopic.listFaq
+                                    : [];
+
+                            if (
+                                faqList.length === 0
+                            ) {
+                                continue;
+                            }
+
+                            const mappedTopic =
+                                importSource
+                                    .topicNameMapping[
+                                sourceTopic.ur
+                                ] ?? {
+                                    name:
+                                        sourceTopic.ur,
+                                    slug:
+                                        createSlug(
+                                            sourceTopic.ur
+                                        ) ||
+                                        `topik-${sourceTopic.kd_subkategori_faq}`,
+                                };
+
+                            const savedTopic =
+                                await saveTopic(
+                                    tx,
+                                    {
+                                        sourceTopic,
+                                        localSubcategory,
+                                        mappedTopic,
+                                        topicIndex,
+                                    }
+                                );
+
+                            importedTopics += 1;
+
+                            for (
+                                const [
+                                    faqIndex,
+                                    sourceFaq,
+                                ] of faqList.entries()
+                            ) {
+                                await saveFaq(
+                                    tx,
+                                    {
+                                        sourceFaq,
+                                        savedTopic,
+                                        faqIndex,
+                                    }
+                                );
+
+                                importedFaqs += 1;
+                            }
+                        }
+                    }
+
+                    console.log(
+                        `Selesai memproses ${importSource.fileName}`
+                    );
+                }
+            }
+        );
+
+        console.log(
+            "Import seluruh FAQ berhasil."
+        );
+
+        console.log(
+            `Subkategori diproses: ${importedSubcategories}`
+        );
+
+        console.log(
+            `Topik diproses: ${importedTopics}`
+        );
+
+        console.log(
+            `FAQ diproses: ${importedFaqs}`
+        );
     } catch (error) {
-        console.error("Import FAQ gagal:", error);
+        console.error(
+            "Import FAQ gagal:",
+            error
+        );
+
         process.exitCode = 1;
     } finally {
         await pool.end();

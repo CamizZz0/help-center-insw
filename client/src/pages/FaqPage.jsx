@@ -74,6 +74,11 @@ export default function FaqPage() {
         useState(null);
 
     const [
+        selectedSubcategorySlug,
+        setSelectedSubcategorySlug,
+    ] = useState("");
+
+    const [
         selectedTopicName,
         setSelectedTopicName,
     ] = useState(
@@ -232,6 +237,17 @@ export default function FaqPage() {
                 setFaqs(faqList);
                 setMeta(result?.meta ?? null);
 
+                if (topicSlug && !search) {
+                    const activeSubcategorySlug =
+                        result?.data?.subcategory?.slug ??
+                        faqList[0]?.subcategory?.slug ??
+                        "";
+
+                    setSelectedSubcategorySlug(
+                        activeSubcategorySlug
+                    );
+                }
+
                 if (
                     topicSlug &&
                     faqList[0]?.topic?.name
@@ -300,6 +316,9 @@ export default function FaqPage() {
                                     }
                                     selectedTopicSlug={
                                         topicSlug
+                                    }
+                                    selectedSubcategorySlug={
+                                        selectedSubcategorySlug
                                     }
                                     onSelectTopic={
                                         handleSelectTopic
