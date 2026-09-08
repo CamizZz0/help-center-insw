@@ -26,10 +26,18 @@ export default function TutorialsPage() {
                     limit: 6,
                 });
 
-                setTutorials(result.data);
-                setMeta(result.meta);
+                setTutorials(
+                    Array.isArray(result?.data)
+                        ? result.data
+                        : []
+                );
+
+                setMeta(result?.meta ?? null);
             } catch (err) {
-                setError(err.message);
+                setError(
+                    err.message ||
+                    "Gagal mengambil data tutorial."
+                );
             } finally {
                 setLoading(false);
             }
@@ -53,49 +61,50 @@ export default function TutorialsPage() {
 
             <Breadcrumb categoryName="Tutorial INSW" />
 
-            <section className="bg-[#F0F8FF] px-6 py-16 text-center">
-                <h1 className="text-4xl font-bold text-slate-900">
+            <section className="bg-[#F0F8FF] px-4 py-12 text-center sm:px-6 sm:py-16">
+                <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
                     Tutorial INSW
                 </h1>
 
-                <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:mt-4 sm:text-lg sm:leading-8">
                     Ikuti tutorial visual untuk memahami
                     penggunaan fitur dan layanan pada Portal INSW.
                 </p>
             </section>
 
-            <main className="min-h-screen bg-[#F8FAFC] px-6 py-16">
+            <main className="min-h-screen bg-[#F8FAFC] px-4 py-12 sm:px-6 sm:py-16">
                 <section className="mx-auto max-w-7xl">
                     <div>
-                        <h2 className="text-3xl font-bold text-slate-900">
+                        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                             Daftar Tutorial
                         </h2>
 
-                        <p className="mt-2 text-slate-600">
-                            Total tutorial: {meta?.totalItems ?? 0}
+                        <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                            Total tutorial:{" "}
+                            {meta?.totalItems ?? 0}
                         </p>
                     </div>
 
                     {loading ? (
-                        <div className="mt-10 rounded-xl bg-white p-8 text-slate-600">
+                        <div className="mt-8 rounded-xl bg-white p-5 text-sm text-slate-600 sm:mt-10 sm:p-8 sm:text-base">
                             Memuat tutorial...
                         </div>
                     ) : error ? (
-                        <div className="mt-10 rounded-xl bg-red-50 p-8 text-red-600">
+                        <div className="mt-8 rounded-xl bg-red-50 p-5 text-sm text-red-600 sm:mt-10 sm:p-8 sm:text-base">
                             {error}
                         </div>
                     ) : tutorials.length === 0 ? (
-                        <div className="mt-10 rounded-xl border border-slate-200 bg-white p-10 text-center">
+                        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-center sm:mt-10 sm:p-10">
                             <h2 className="font-semibold text-slate-900">
                                 Tutorial belum tersedia
                             </h2>
 
-                            <p className="mt-2 text-slate-600">
+                            <p className="mt-2 text-sm text-slate-600 sm:text-base">
                                 Silakan kembali lagi nanti.
                             </p>
                         </div>
                     ) : (
-                        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-8 grid items-stretch gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
                             {tutorials.map((tutorial) => (
                                 <TutorialCard
                                     key={tutorial.id}
