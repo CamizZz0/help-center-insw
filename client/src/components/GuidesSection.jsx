@@ -4,6 +4,8 @@ import {
     PlayCircle,
 } from "lucide-react";
 
+import { Link } from "react-router-dom";
+
 const guideItems = [
     {
         title: "Panduan Pengguna",
@@ -11,6 +13,7 @@ const guideItems = [
             "Pelajari penggunaan layanan INSW melalui dokumen panduan yang tersedia.",
         action: "Lihat Panduan",
         icon: BookOpen,
+        href: "/panduan",
     },
     {
         title: "Video Tutorial",
@@ -18,6 +21,7 @@ const guideItems = [
             "Ikuti tutorial penggunaan layanan INSW melalui panduan berbentuk video.",
         action: "Lihat Tutorial",
         icon: PlayCircle,
+        href: "/tutorial",
     },
 ];
 
@@ -56,13 +60,25 @@ export default function GuidesSection() {
                                 {item.description}
                             </p>
 
-                            <span className="mt-6 inline-flex items-center gap-2 font-semibold text-blue-600">
-                                {item.action}
-                                <ArrowRight
-                                    size={18}
-                                    className="transition group-hover:translate-x-1"
-                                />
-                            </span>
+                            {item.href ? (
+                                <Link
+                                    to={item.href}
+                                    className="mt-6 inline-flex items-center gap-2 font-semibold text-blue-600"
+                                >
+                                    {item.action}
+
+                                    <ArrowRight
+                                        size={18}
+                                        className="transition group-hover:translate-x-1"
+                                    />
+                                </Link>
+                            ) : (
+                                <span className="mt-6 inline-flex items-center gap-2 font-semibold text-slate-400">
+                                    {item.action}
+
+                                    <ArrowRight size={18} />
+                                </span>
+                            )}
                         </article>
                     );
                 })}
