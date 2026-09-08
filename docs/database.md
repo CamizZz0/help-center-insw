@@ -2,42 +2,52 @@
 
 Dokumentasi database untuk aplikasi redesign Help Center Indonesia National Single Window (INSW).
 
-## 1. Informasi Database
+> Status: pengembangan aktif  
+> Terakhir diperbarui: 8 September 2026
 
-| Informasi         | Nilai              |
-| ----------------- | ------------------ |
-| Database          | PostgreSQL         |
-| Nama database     | `help_center_insw` |
-| ORM               | Drizzle ORM        |
-| Backend           | Express.js         |
-| Driver            | `node-postgres`    |
-| Schema PostgreSQL | `public`           |
+## 1. Informasi database
 
-Database menyimpan konten dinamis Help Center, sedangkan React hanya mengambil data melalui REST API.
+| Informasi                 | Nilai                  |
+| ------------------------- | ---------------------- |
+| Database                  | PostgreSQL             |
+| Nama database development | `help_center_insw`     |
+| ORM                       | Drizzle ORM            |
+| Driver                    | `node-postgres` (`pg`) |
+| Backend                   | Express.js             |
+| Schema PostgreSQL         | `public`               |
 
-## 2. Status Tabel
+Database menyimpan konten dinamis. React hanya mengambil data melalui REST API dan tidak terhubung langsung ke PostgreSQL.
 
-| Tabel            | Status       | Keterangan                 |
-| ---------------- | ------------ | -------------------------- |
-| `categories`     | Tersedia     | Kategori utama Help Center |
-| `subcategories`  | Tersedia     | Topik di dalam kategori    |
-| `faqs`           | Tersedia     | Pertanyaan dan jawaban     |
-| `guides`         | Direncanakan | Dokumen panduan            |
-| `tutorials`      | Direncanakan | Video atau tutorial        |
-| `tutorial_steps` | Direncanakan | Langkah-langkah tutorial   |
+```text
+React/Vite → Express API → Drizzle ORM → PostgreSQL
+```
+
+## 2. Status tabel
+
+| Tabel           | Status   | Keterangan                 |
+| --------------- | -------- | -------------------------- |
+| `categories`    | Tersedia | Kategori utama Help Center |
+| `subcategories` | Tersedia | Subkategori dalam kategori |
+| `faq_topics`    | Tersedia | Topik dalam subkategori    |
+| `faqs`          | Tersedia | Pertanyaan dan jawaban FAQ |
+| `guides`        | Tersedia | Metadata panduan PDF       |
+| `tutorials`     | Tersedia | Metadata video tutorial    |
+
+Tabel `tutorial_steps` tidak digunakan karena tutorial saat ini langsung membuka video YouTube dan tidak mempunyai halaman langkah-langkah internal.
 
 ## 3. Entity Relationship Diagram
 
 ```mermaid
 erDiagram
     categories ||--o{ subcategories : memiliki
-    subcategories ||--o{ faqs : memiliki
-    categories ||--o{ guides : memiliki
-    categories ||--o{ tutorials : memiliki
-    tutorials ||--o{ tutorial_steps : memiliki
+    subcategories ||--o{ faq_topics : memiliki
+    faq_topics ||--o{ faqs : memiliki
+    categories ||--o{ guides : mengelompokkan
+    categories ||--o{ tutorials : mengelompokkan
 
     categories {
         integer id PK
+        integer source_id UK
         varchar name
         varchar slug UK
         text description
@@ -50,6 +60,7 @@ erDiagram
 
     subcategories {
         integer id PK
+        integer source_id UK
         integer category_id FK
         varchar name
         varchar slug UK
@@ -61,9 +72,23 @@ erDiagram
         timestamp updated_at
     }
 
+    faq_topics {
+        integer id PK
+        integer source_id UK
+        integer subcategory_id FK
+        varchar name
+        varchar slug UK
+        text description
+        integer sort_order
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
     faqs {
         integer id PK
-        integer subcategory_id FK
+        integer source_id UK
+        integer topic_id FK
         text question
         text answer
         boolean is_popular
@@ -103,22 +128,35 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-
-    tutorial_steps {
-        integer id PK
-        integer tutorial_id FK
-        integer step_number
-        varchar title
-        text description
-        varchar image_url
-        timestamp created_at
-        timestamp updated_at
-    }
 ```
 
-## 4. Tabel `categories`
+## 4. Hierarki FAQ
 
-Menyimpan kategori utama yang ditampilkan sebagai card pada halaman utama Help Center.
+Struktur data FAQ terdiri dari empat tingkat:
+
+```text
+Kategori
+└── Subkategori
+    └── Topik
+        └── Pertanyaan dan jawaban FAQ
+```
+
+Contoh:
+
+```text
+Impor & Kepabeanan
+└── PIB
+    ├── Pendahuluan PIB
+    │   ├── Kekurangan dokumen saat mengajukan nomor aju PIB
+    │   └── Jumlah dokumen persyaratan terkait komoditas
+    └── Tracking PIB
+        ├── NSW Reject dan BC Reject
+        └── Aju dokumen PIB tidak ada di tracking INSW
+```
+
+## 5. Tabel `categories`
+
+Menyimpan kategori utama yang ditampilkan sebagai card pada landing page.
 
 Contoh kategori:
 
@@ -130,215 +168,149 @@ Contoh kategori:
 - Fasilitas & Kawasan
 - Layanan Lainnya
 
-### Struktur kolom
+| Kolom         | Tipe                       | Constraint               | Keterangan                   |
+| ------------- | -------------------------- | ------------------------ | ---------------------------- |
+| `id`          | `serial`                   | Primary key              | Identitas internal kategori  |
+| `source_id`   | `integer`                  | Unique, nullable         | ID kategori pada sumber lama |
+| `name`        | `varchar(150)`             | Not null                 | Nama kategori                |
+| `slug`        | `varchar(150)`             | Not null, unique         | Nama aman untuk URL          |
+| `description` | `text`                     | Nullable                 | Deskripsi kategori           |
+| `icon`        | `varchar(100)`             | Nullable                 | Kunci ikon untuk frontend    |
+| `sort_order`  | `integer`                  | Not null, default `0`    | Urutan tampilan              |
+| `is_active`   | `boolean`                  | Not null, default `true` | Status aktif                 |
+| `created_at`  | `timestamp with time zone` | Default sekarang         | Waktu dibuat                 |
+| `updated_at`  | `timestamp with time zone` | Default sekarang         | Waktu diperbarui             |
 
-| Kolom         | Tipe                       | Constraint       | Keterangan             |
-| ------------- | -------------------------- | ---------------- | ---------------------- |
-| `id`          | `serial`                   | Primary key      | Identitas kategori     |
-| `name`        | `varchar(150)`             | Not null         | Nama kategori          |
-| `slug`        | `varchar(150)`             | Not null, unique | Digunakan pada URL     |
-| `description` | `text`                     | Nullable         | Deskripsi kategori     |
-| `icon`        | `varchar(100)`             | Nullable         | Kunci ikon untuk React |
-| `sort_order`  | `integer`                  | Default `0`      | Urutan tampilan        |
-| `is_active`   | `boolean`                  | Default `true`   | Status kategori        |
-| `created_at`  | `timestamp with time zone` | Default sekarang | Waktu dibuat           |
-| `updated_at`  | `timestamp with time zone` | Default sekarang | Waktu diperbarui       |
+## 6. Tabel `subcategories`
 
-### Contoh data
+Menyimpan subkategori yang berada di dalam kategori.
 
-```json
-{
-  "id": 1,
-  "name": "Impor & Kepabeanan",
-  "slug": "impor-kepabeanan",
-  "description": "Informasi terkait proses impor dan kepabeanan.",
-  "icon": "package-import",
-  "sortOrder": 1,
-  "isActive": true
-}
-```
+| Kolom         | Tipe                       | Constraint               | Keterangan                      |
+| ------------- | -------------------------- | ------------------------ | ------------------------------- |
+| `id`          | `serial`                   | Primary key              | Identitas internal subkategori  |
+| `source_id`   | `integer`                  | Unique, nullable         | ID subkategori pada sumber lama |
+| `category_id` | `integer`                  | Foreign key, not null    | Referensi ke `categories.id`    |
+| `name`        | `varchar(150)`             | Not null                 | Nama subkategori                |
+| `slug`        | `varchar(150)`             | Not null, unique         | Nama aman untuk URL             |
+| `description` | `text`                     | Nullable                 | Deskripsi subkategori           |
+| `icon`        | `varchar(100)`             | Nullable                 | Kunci ikon untuk frontend       |
+| `sort_order`  | `integer`                  | Not null, default `0`    | Urutan tampilan                 |
+| `is_active`   | `boolean`                  | Not null, default `true` | Status aktif                    |
+| `created_at`  | `timestamp with time zone` | Default sekarang         | Waktu dibuat                    |
+| `updated_at`  | `timestamp with time zone` | Default sekarang         | Waktu diperbarui                |
 
-## 5. Tabel `subcategories`
-
-Menyimpan topik yang berada di dalam kategori.
-
-Contoh struktur:
-
-```text
-Impor & Kepabeanan
-├── PIB
-├── DO Online/SP2
-├── SSM QC (Impor–Ekspor)
-├── BTKI 2022
-└── Modul Pertek/Rekom
-```
-
-### Struktur kolom
-
-| Kolom         | Tipe                       | Constraint            | Keterangan             |
-| ------------- | -------------------------- | --------------------- | ---------------------- |
-| `id`          | `serial`                   | Primary key           | Identitas subkategori  |
-| `category_id` | `integer`                  | Foreign key, not null | Referensi kategori     |
-| `name`        | `varchar(150)`             | Not null              | Nama subkategori       |
-| `slug`        | `varchar(150)`             | Not null, unique      | Digunakan pada URL     |
-| `description` | `text`                     | Nullable              | Penjelasan subkategori |
-| `icon`        | `varchar(100)`             | Nullable              | Kunci ikon untuk React |
-| `sort_order`  | `integer`                  | Default `0`           | Urutan tampilan        |
-| `is_active`   | `boolean`                  | Default `true`        | Status subkategori     |
-| `created_at`  | `timestamp with time zone` | Default sekarang      | Waktu dibuat           |
-| `updated_at`  | `timestamp with time zone` | Default sekarang      | Waktu diperbarui       |
-
-### Foreign key
+Foreign key:
 
 ```text
 subcategories.category_id → categories.id
 ```
 
-Aturan penghapusan:
+Aturan penghapusan: `ON DELETE CASCADE`.
+
+## 7. Tabel `faq_topics`
+
+Menyimpan kelompok topik di dalam satu subkategori. Tabel ini memisahkan topik seperti `Pendahuluan PIB`, `Tracking PIB`, dan `Reject Dokumen`.
+
+| Kolom            | Tipe                       | Constraint               | Keterangan                      |
+| ---------------- | -------------------------- | ------------------------ | ------------------------------- |
+| `id`             | `serial`                   | Primary key              | Identitas internal topik        |
+| `source_id`      | `integer`                  | Unique, nullable         | ID topik pada sumber lama       |
+| `subcategory_id` | `integer`                  | Foreign key, not null    | Referensi ke `subcategories.id` |
+| `name`           | `varchar(150)`             | Not null                 | Nama topik                      |
+| `slug`           | `varchar(150)`             | Not null, unique         | Nama aman untuk URL             |
+| `description`    | `text`                     | Nullable                 | Deskripsi topik                 |
+| `sort_order`     | `integer`                  | Not null, default `0`    | Urutan tampilan                 |
+| `is_active`      | `boolean`                  | Not null, default `true` | Status aktif                    |
+| `created_at`     | `timestamp with time zone` | Default sekarang         | Waktu dibuat                    |
+| `updated_at`     | `timestamp with time zone` | Default sekarang         | Waktu diperbarui                |
+
+Foreign key:
 
 ```text
-ON DELETE CASCADE
+faq_topics.subcategory_id → subcategories.id
 ```
 
-Jika kategori dihapus, subkategori di dalamnya ikut terhapus.
+Aturan penghapusan: `ON DELETE CASCADE`.
 
-## 6. Tabel `faqs`
+## 8. Tabel `faqs`
 
-Menyimpan pertanyaan dan jawaban yang berada di dalam subkategori.
+Menyimpan pertanyaan dan jawaban. Satu topik dapat mempunyai banyak FAQ.
 
-Satu subkategori dapat mempunyai banyak FAQ.
+| Kolom          | Tipe                       | Constraint                | Keterangan                                           |
+| -------------- | -------------------------- | ------------------------- | ---------------------------------------------------- |
+| `id`           | `serial`                   | Primary key               | Identitas internal FAQ                               |
+| `source_id`    | `integer`                  | Unique, nullable          | ID FAQ pada sumber lama                              |
+| `topic_id`     | `integer`                  | Foreign key, not null     | Referensi ke `faq_topics.id`                         |
+| `question`     | `text`                     | Not null                  | Pertanyaan FAQ                                       |
+| `answer`       | `text`                     | Not null                  | Jawaban FAQ; dapat berisi HTML yang telah disanitasi |
+| `is_popular`   | `boolean`                  | Not null, default `false` | Ditampilkan pada FAQ Populer                         |
+| `sort_order`   | `integer`                  | Not null, default `0`     | Urutan FAQ                                           |
+| `is_published` | `boolean`                  | Not null, default `true`  | Status publikasi                                     |
+| `created_at`   | `timestamp with time zone` | Default sekarang          | Waktu dibuat                                         |
+| `updated_at`   | `timestamp with time zone` | Default sekarang          | Waktu diperbarui                                     |
 
-### Struktur kolom
-
-| Kolom            | Tipe                       | Constraint            | Keterangan                   |
-| ---------------- | -------------------------- | --------------------- | ---------------------------- |
-| `id`             | `serial`                   | Primary key           | Identitas FAQ                |
-| `subcategory_id` | `integer`                  | Foreign key, not null | Referensi subkategori        |
-| `question`       | `text`                     | Not null              | Pertanyaan FAQ               |
-| `answer`         | `text`                     | Not null              | Jawaban FAQ                  |
-| `is_popular`     | `boolean`                  | Default `false`       | Ditampilkan pada FAQ Populer |
-| `sort_order`     | `integer`                  | Default `0`           | Urutan FAQ                   |
-| `is_published`   | `boolean`                  | Default `true`        | Status publikasi             |
-| `created_at`     | `timestamp with time zone` | Default sekarang      | Waktu dibuat                 |
-| `updated_at`     | `timestamp with time zone` | Default sekarang      | Waktu diperbarui             |
-
-### Foreign key
+Foreign key:
 
 ```text
-faqs.subcategory_id → subcategories.id
+faqs.topic_id → faq_topics.id
 ```
 
-Aturan penghapusan:
+Aturan penghapusan: `ON DELETE CASCADE`.
 
-```text
-ON DELETE CASCADE
-```
+## 9. Tabel `guides`
 
-Jika subkategori dihapus, FAQ di dalamnya ikut terhapus.
+Menyimpan metadata panduan. File PDF tidak disimpan sebagai binary di PostgreSQL; database hanya menyimpan URL file.
 
-### Contoh data
+| Kolom           | Tipe                       | Constraint               | Keterangan          |
+| --------------- | -------------------------- | ------------------------ | ------------------- |
+| `id`            | `serial`                   | Primary key              | Identitas panduan   |
+| `category_id`   | `integer`                  | Foreign key, nullable    | Kategori panduan    |
+| `title`         | `varchar(200)`             | Not null                 | Judul panduan       |
+| `slug`          | `varchar(200)`             | Not null, unique         | Nama aman untuk URL |
+| `description`   | `text`                     | Nullable                 | Deskripsi panduan   |
+| `thumbnail_url` | `varchar(500)`             | Nullable                 | URL thumbnail       |
+| `file_url`      | `varchar(500)`             | Not null                 | URL/path PDF        |
+| `sort_order`    | `integer`                  | Not null, default `0`    | Urutan tampilan     |
+| `is_published`  | `boolean`                  | Not null, default `true` | Status publikasi    |
+| `published_at`  | `timestamp with time zone` | Nullable                 | Waktu publikasi     |
+| `created_at`    | `timestamp with time zone` | Default sekarang         | Waktu dibuat        |
+| `updated_at`    | `timestamp with time zone` | Default sekarang         | Waktu diperbarui    |
 
-```json
-{
-  "id": 1,
-  "subcategoryId": 1,
-  "question": "Apa itu PIB?",
-  "answer": "PIB adalah pemberitahuan pabean untuk pengeluaran barang impor.",
-  "isPopular": true,
-  "sortOrder": 1,
-  "isPublished": true
-}
-```
+## 10. Tabel `tutorials`
 
-## 7. Tabel `guides` — Direncanakan
+Menyimpan metadata video tutorial. File video tidak disimpan sebagai binary di PostgreSQL; database hanya menyimpan URL YouTube atau penyedia video lainnya.
 
-Menyimpan metadata dokumen panduan.
+| Kolom              | Tipe                       | Constraint               | Keterangan               |
+| ------------------ | -------------------------- | ------------------------ | ------------------------ |
+| `id`               | `serial`                   | Primary key              | Identitas tutorial       |
+| `category_id`      | `integer`                  | Foreign key, nullable    | Kategori tutorial        |
+| `title`            | `varchar(200)`             | Not null                 | Judul tutorial           |
+| `slug`             | `varchar(200)`             | Not null, unique         | Nama aman untuk URL      |
+| `description`      | `text`                     | Nullable                 | Deskripsi tutorial       |
+| `thumbnail_url`    | `varchar(500)`             | Nullable                 | URL thumbnail video      |
+| `video_url`        | `varchar(500)`             | Not null                 | URL video                |
+| `duration_seconds` | `integer`                  | Nullable                 | Durasi video dalam detik |
+| `sort_order`       | `integer`                  | Not null, default `0`    | Urutan tampilan          |
+| `is_published`     | `boolean`                  | Not null, default `true` | Status publikasi         |
+| `published_at`     | `timestamp with time zone` | Nullable                 | Waktu publikasi          |
+| `created_at`       | `timestamp with time zone` | Default sekarang         | Waktu dibuat             |
+| `updated_at`       | `timestamp with time zone` | Default sekarang         | Waktu diperbarui         |
 
-File PDF tidak disimpan sebagai binary di PostgreSQL. Database hanya menyimpan URL atau path file.
+## 11. Hubungan dan aturan penghapusan
 
-### Struktur kolom
+| Parent          | Child           | Relasi      | Aturan                 |
+| --------------- | --------------- | ----------- | ---------------------- |
+| `categories`    | `subcategories` | One-to-many | `ON DELETE CASCADE`    |
+| `subcategories` | `faq_topics`    | One-to-many | `ON DELETE CASCADE`    |
+| `faq_topics`    | `faqs`          | One-to-many | `ON DELETE CASCADE`    |
+| `categories`    | `guides`        | One-to-many | Sesuai definisi schema |
+| `categories`    | `tutorials`     | One-to-many | Sesuai definisi schema |
 
-| Kolom           | Tipe                       | Constraint       | Keterangan         |
-| --------------- | -------------------------- | ---------------- | ------------------ |
-| `id`            | `serial`                   | Primary key      | Identitas panduan  |
-| `category_id`   | `integer`                  | Foreign key      | Kategori panduan   |
-| `title`         | `varchar(200)`             | Not null         | Judul panduan      |
-| `slug`          | `varchar(200)`             | Not null, unique | URL detail panduan |
-| `description`   | `text`                     | Nullable         | Deskripsi panduan  |
-| `thumbnail_url` | `varchar(500)`             | Nullable         | URL thumbnail      |
-| `file_url`      | `varchar(500)`             | Not null         | URL/path PDF       |
-| `sort_order`    | `integer`                  | Default `0`      | Urutan tampilan    |
-| `is_published`  | `boolean`                  | Default `true`   | Status publikasi   |
-| `published_at`  | `timestamp with time zone` | Nullable         | Waktu publikasi    |
-| `created_at`    | `timestamp with time zone` | Default sekarang | Waktu dibuat       |
-| `updated_at`    | `timestamp with time zone` | Default sekarang | Waktu diperbarui   |
+Penghapusan parent harus dilakukan dengan hati-hati karena data turunannya dapat ikut terhapus.
 
-## 8. Tabel `tutorials` — Direncanakan
+## 12. Aturan slug
 
-Menyimpan metadata tutorial video.
-
-Video tidak disimpan sebagai binary di PostgreSQL. Database hanya menyimpan URL video.
-
-### Struktur kolom
-
-| Kolom              | Tipe                       | Constraint       | Keterangan          |
-| ------------------ | -------------------------- | ---------------- | ------------------- |
-| `id`               | `serial`                   | Primary key      | Identitas tutorial  |
-| `category_id`      | `integer`                  | Foreign key      | Kategori tutorial   |
-| `title`            | `varchar(200)`             | Not null         | Judul tutorial      |
-| `slug`             | `varchar(200)`             | Not null, unique | URL detail tutorial |
-| `description`      | `text`                     | Nullable         | Deskripsi tutorial  |
-| `thumbnail_url`    | `varchar(500)`             | Nullable         | URL thumbnail       |
-| `video_url`        | `varchar(500)`             | Not null         | URL video           |
-| `duration_seconds` | `integer`                  | Nullable         | Durasi dalam detik  |
-| `sort_order`       | `integer`                  | Default `0`      | Urutan tampilan     |
-| `is_published`     | `boolean`                  | Default `true`   | Status publikasi    |
-| `published_at`     | `timestamp with time zone` | Nullable         | Waktu publikasi     |
-| `created_at`       | `timestamp with time zone` | Default sekarang | Waktu dibuat        |
-| `updated_at`       | `timestamp with time zone` | Default sekarang | Waktu diperbarui    |
-
-## 9. Tabel `tutorial_steps` — Direncanakan
-
-Menyimpan langkah-langkah dari satu tutorial.
-
-### Struktur kolom
-
-| Kolom         | Tipe                       | Constraint            | Keterangan         |
-| ------------- | -------------------------- | --------------------- | ------------------ |
-| `id`          | `serial`                   | Primary key           | Identitas langkah  |
-| `tutorial_id` | `integer`                  | Foreign key, not null | Referensi tutorial |
-| `step_number` | `integer`                  | Not null              | Nomor urut langkah |
-| `title`       | `varchar(200)`             | Not null              | Judul langkah      |
-| `description` | `text`                     | Not null              | Penjelasan langkah |
-| `image_url`   | `varchar(500)`             | Nullable              | Gambar pendukung   |
-| `created_at`  | `timestamp with time zone` | Default sekarang      | Waktu dibuat       |
-| `updated_at`  | `timestamp with time zone` | Default sekarang      | Waktu diperbarui   |
-
-## 10. Hubungan Antar-Entitas
-
-| Parent          | Child            | Relasi      |
-| --------------- | ---------------- | ----------- |
-| `categories`    | `subcategories`  | One-to-many |
-| `subcategories` | `faqs`           | One-to-many |
-| `categories`    | `guides`         | One-to-many |
-| `categories`    | `tutorials`      | One-to-many |
-| `tutorials`     | `tutorial_steps` | One-to-many |
-
-Contoh aliran data FAQ:
-
-```text
-Impor & Kepabeanan
-└── PIB
-    ├── Apa itu PIB?
-    ├── Bagaimana cara mengisi PIB?
-    └── Bagaimana memantau status PIB?
-```
-
-## 11. Aturan Slug
-
-Slug digunakan untuk membuat URL yang mudah dibaca.
-
-Contoh:
+Slug digunakan pada URL dan pencarian resource.
 
 ```text
 Nama: Impor & Kepabeanan
@@ -354,39 +326,70 @@ Ketentuan slug:
 - Harus unik pada tabelnya.
 - Tidak boleh berubah sembarangan setelah digunakan pada production.
 
-## 12. Aturan Data
+## 13. Fungsi `source_id`
 
-- Hanya kategori dengan `is_active = true` yang ditampilkan.
-- Hanya subkategori dengan `is_active = true` yang ditampilkan.
-- Hanya FAQ dengan `is_published = true` yang dapat dibaca pengguna.
+`source_id` menyimpan ID data dari sistem atau CMS INSW lama. Kolom ini berbeda dari `id` internal PostgreSQL.
+
+| Kolom       | Fungsi                                                    |
+| ----------- | --------------------------------------------------------- |
+| `id`        | Primary key internal project redesign                     |
+| `source_id` | Identitas data dari sumber lama untuk proses sinkronisasi |
+
+Unique constraint pada `source_id` memungkinkan importer menggunakan upsert:
+
+```text
+Data sumber belum ada → INSERT
+Data sumber sudah ada → UPDATE
+```
+
+Dengan cara ini, importer dapat dijalankan kembali tanpa membuat data yang sama berulang kali.
+
+## 14. Aturan data
+
+- Hanya kategori dan subkategori dengan `is_active = true` yang ditampilkan.
+- Hanya topik dengan `is_active = true` yang ditampilkan.
+- Hanya FAQ, panduan, dan tutorial dengan `is_published = true` yang ditampilkan.
 - FAQ populer menggunakan `is_popular = true`.
 - Urutan data menggunakan `sort_order`.
-- `updated_at` diperbarui ketika data berubah.
-- Pertanyaan dan jawaban tidak boleh kosong.
+- Pertanyaan dan jawaban FAQ tidak boleh kosong.
 - Setiap subkategori harus terhubung ke kategori yang valid.
-- Setiap FAQ harus terhubung ke subkategori yang valid.
+- Setiap topik harus terhubung ke subkategori yang valid.
+- Setiap FAQ harus terhubung ke topik yang valid.
+- `updated_at` harus diperbarui ketika data berubah.
 
-## 13. Index dan Constraint
+## 15. Constraint dan index
 
-Index yang disarankan:
+Constraint utama:
+
+- Primary key pada seluruh kolom `id`.
+- Unique constraint pada setiap `slug`.
+- Unique constraint pada `source_id` yang digunakan importer.
+- Foreign key untuk menjaga integritas hubungan antartabel.
+
+Index yang direkomendasikan:
 
 ```text
 categories.slug
+categories.source_id
 subcategories.slug
+subcategories.source_id
 subcategories.category_id
-faqs.subcategory_id
+faq_topics.slug
+faq_topics.source_id
+faq_topics.subcategory_id
+faqs.source_id
+faqs.topic_id
 faqs.is_popular
 faqs.is_published
 guides.slug
 guides.category_id
 tutorials.slug
 tutorials.category_id
-tutorial_steps.tutorial_id
 ```
 
-Kolom `slug` menggunakan unique constraint untuk mencegah URL ganda.
+Untuk pencarian FAQ yang lebih besar, pertimbangkan PostgreSQL full-text search atau index trigram pada `question` dan `answer`.
 
-## 14. Pengelolaan Schema dengan Drizzle
+## 16. Pengelolaan schema dengan Drizzle
 
 Lokasi schema:
 
@@ -400,29 +403,38 @@ Lokasi konfigurasi:
 server/drizzle.config.js
 ```
 
-Mengirim schema langsung ke database development:
+Mengirim schema ke database development:
 
 ```bash
 npm run db:push
 ```
 
-Membuka Drizzle Studio:
+Jika Drizzle menanyakan apakah tabel harus di-truncate saat menambah unique constraint, pilih opsi tanpa truncate setelah memastikan tidak ada data duplikat.
 
-```bash
-npm run db:studio
+Untuk production, gunakan migration yang tersimpan di Git dan lakukan backup sebelum perubahan besar. Jangan mengandalkan `db:push` langsung pada database production.
+
+## 17. Seed dan importer
+
+Data awal kategori, FAQ populer, panduan, dan tutorial dapat dimasukkan melalui script pada:
+
+```text
+server/src/scripts/
 ```
 
-Mengisi data awal:
+Contoh perintah yang digunakan project:
 
 ```bash
-npm run db:seed
+npm run import:faqs
+npm run seed:popular
 ```
 
-`db:push` digunakan selama pengembangan awal. Untuk production, perubahan database sebaiknya menggunakan migration yang disimpan di Git.
+Nama script panduan dan tutorial mengikuti konfigurasi pada `server/package.json`.
 
-## 15. Environment Variable
+Importer FAQ membaca data sumber, memetakan hierarki, membersihkan HTML jawaban, lalu melakukan upsert menggunakan `source_id`.
 
-Koneksi database disimpan di:
+## 18. Environment variable
+
+File lokal:
 
 ```text
 server/.env
@@ -432,29 +444,31 @@ Contoh:
 
 ```env
 DATABASE_URL=postgresql://USERNAME:PASSWORD@HOST:5432/help_center_insw
+PORT=5001
 ```
 
-Repository hanya menyimpan `.env.example`:
+Repository hanya menyimpan contoh berikut:
 
-```env
-DATABASE_URL=postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE_NAME
+```text
+server/.env.example
 ```
 
-File `.env` tidak boleh dimasukkan ke GitHub.
+File `.env` asli tidak boleh dimasukkan ke GitHub.
 
-## 16. Keamanan Database
+## 19. Keamanan dan operasional
 
 - Kredensial database disimpan melalui environment variable.
-- Password tidak boleh ditulis langsung pada source code.
-- Query menggunakan Drizzle untuk menghindari penggabungan input secara langsung.
-- API tidak mengirim stack trace atau query database kepada pengguna.
-- Database production menggunakan user dengan hak akses sesuai kebutuhan.
-- Backup database dilakukan sebelum migration besar.
-- File PDF, video, dan gambar tidak disimpan sebagai binary di PostgreSQL.
+- Password tidak ditulis langsung pada source code.
+- Input API divalidasi sebelum digunakan pada query.
+- HTML dari sumber eksternal disanitasi.
+- API production tidak mengirim stack trace atau query SQL kepada pengguna.
+- Database production menggunakan user dengan hak akses minimum yang diperlukan.
+- Backup dilakukan sebelum migration besar atau import massal.
+- PDF, video, dan gambar tidak disimpan sebagai binary di PostgreSQL.
 
-## 17. Scope Saat Ini
+## 20. Scope saat ini
 
-Database saat ini ditujukan untuk konten publik Help Center.
+Database ditujukan untuk konten publik Help Center. Login pengguna tidak diperlukan untuk membaca FAQ, panduan, atau tutorial.
 
 Tabel berikut belum diperlukan:
 
@@ -464,15 +478,14 @@ roles
 sessions
 ```
 
-Tabel autentikasi hanya ditambahkan apabila project mendapatkan scope dashboard admin untuk mengelola kategori, FAQ, panduan, dan tutorial.
+Autentikasi baru diperlukan apabila scope project ditambah dengan dashboard admin untuk mengelola konten.
 
-## 18. Pemeliharaan Dokumentasi
+## 21. Pemeliharaan dokumentasi
 
 Dokumentasi ini harus diperbarui ketika:
 
-- Tabel baru ditambahkan.
-- Kolom diubah atau dihapus.
-- Foreign key berubah.
-- Constraint atau index ditambahkan.
-- Struktur panduan dan tutorial sudah diimplementasikan.
-- Sistem autentikasi admin mulai dikembangkan.
+- Tabel atau kolom ditambahkan, diubah, atau dihapus.
+- Foreign key, constraint, atau index berubah.
+- Format importer berubah.
+- Panduan atau tutorial menggunakan penyimpanan file baru.
+- Sistem autentikasi atau dashboard admin mulai dikembangkan.

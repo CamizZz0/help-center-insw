@@ -2,9 +2,30 @@
 
 Dokumentasi REST API untuk aplikasi redesign Help Center Indonesia National Single Window (INSW).
 
-> Status dokumen: pengembangan. Endpoint berlabel **Tersedia** sudah diimplementasikan, sedangkan endpoint berlabel **Direncanakan** menjadi kontrak untuk tahap pengembangan berikutnya.
+> Status: pengembangan aktif  
+> Terakhir diperbarui: 8 September 2026
 
-## 1. Informasi Umum
+## 1. Ringkasan sistem
+
+API dibangun menggunakan Express.js dan mengambil data dari PostgreSQL melalui Drizzle ORM. Aplikasi React tidak mengakses database secara langsung.
+
+```text
+React/Vite → Express REST API → Drizzle ORM → PostgreSQL
+```
+
+Konten FAQ memiliki hierarki berikut:
+
+```text
+Kategori → Subkategori → Topik → Pertanyaan dan jawaban FAQ
+```
+
+Contoh:
+
+```text
+Impor & Kepabeanan → PIB → Tracking PIB → Daftar FAQ Tracking PIB
+```
+
+## 2. Informasi umum
 
 ### Base URL
 
@@ -46,7 +67,7 @@ Content-Type: application/json
   "meta": {
     "page": 1,
     "limit": 6,
-    "totalItems": 18,
+    "totalItems": 13,
     "totalPages": 3,
     "hasNextPage": true,
     "hasPreviousPage": false
@@ -63,33 +84,30 @@ Content-Type: application/json
 }
 ```
 
-Pada production, detail internal seperti stack trace, query SQL, password, dan connection string tidak boleh dikirim kepada client.
+Detail internal seperti stack trace, query SQL, password, dan connection string tidak boleh dikirim kepada client pada lingkungan production.
 
-## 2. Ringkasan Endpoint
+## 3. Ringkasan endpoint
 
-| Method | Endpoint                                  | Status       | Kegunaan                                   |
-| ------ | ----------------------------------------- | ------------ | ------------------------------------------ |
-| `GET`  | `/health`                                 | Tersedia     | Memeriksa API dan koneksi PostgreSQL       |
-| `GET`  | `/categories`                             | Tersedia     | Mengambil seluruh kategori aktif           |
-| `GET`  | `/categories/:categorySlug`               | Direncanakan | Mengambil detail kategori                  |
-| `GET`  | `/categories/:categorySlug/subcategories` | Direncanakan | Mengambil subkategori berdasarkan kategori |
-| `GET`  | `/subcategories/:subcategorySlug`         | Direncanakan | Mengambil detail subkategori               |
-| `GET`  | `/subcategories/:subcategorySlug/faqs`    | Direncanakan | Mengambil FAQ per subkategori              |
-| `GET`  | `/faqs`                                   | Direncanakan | Mengambil dan mencari FAQ                  |
-| `GET`  | `/faqs/popular`                           | Direncanakan | Mengambil FAQ populer                      |
-| `GET`  | `/faqs/:faqId`                            | Direncanakan | Mengambil detail satu FAQ                  |
-| `GET`  | `/guides`                                 | Direncanakan | Mengambil daftar panduan                   |
-| `GET`  | `/guides/:guideSlug`                      | Direncanakan | Mengambil detail panduan/PDF               |
-| `GET`  | `/tutorials`                              | Direncanakan | Mengambil daftar tutorial                  |
-| `GET`  | `/tutorials/:tutorialSlug`                | Direncanakan | Mengambil detail tutorial                  |
+| Method | Endpoint                                  | Status   | Kegunaan                                      |
+| ------ | ----------------------------------------- | -------- | --------------------------------------------- |
+| `GET`  | `/health`                                 | Tersedia | Memeriksa API dan koneksi PostgreSQL          |
+| `GET`  | `/categories`                             | Tersedia | Mengambil semua kategori aktif                |
+| `GET`  | `/categories/:categorySlug/subcategories` | Tersedia | Mengambil subkategori pada satu kategori      |
+| `GET`  | `/subcategories/:subcategorySlug/topics`  | Tersedia | Mengambil topik pada satu subkategori         |
+| `GET`  | `/topics/:topicSlug/faqs`                 | Tersedia | Mengambil FAQ berdasarkan topik               |
+| `GET`  | `/faqs`                                   | Tersedia | Mengambil, mencari, dan memfilter FAQ populer |
+| `GET`  | `/guides`                                 | Tersedia | Mengambil daftar panduan PDF                  |
+| `GET`  | `/guides/:guideSlug`                      | Tersedia | Mengambil satu panduan berdasarkan slug       |
+| `GET`  | `/tutorials`                              | Tersedia | Mengambil daftar video tutorial               |
+| `GET`  | `/tutorials/:tutorialSlug`                | Tersedia | Mengambil satu tutorial berdasarkan slug      |
 
-## 3. Health Check
+Endpoint detail panduan dan tutorial tetap tersedia untuk kebutuhan integrasi, walaupun frontend saat ini langsung membuka PDF atau YouTube tanpa halaman detail internal.
 
-### GET `/health`
+## 4. Health check
+
+### `GET /health`
 
 Memeriksa apakah Express API berjalan dan dapat terhubung ke PostgreSQL.
-
-Contoh request:
 
 ```http
 GET /api/health
@@ -101,7 +119,7 @@ Respons `200 OK`:
 {
   "success": true,
   "message": "API dan PostgreSQL berhasil terhubung",
-  "databaseTime": "2026-09-01T06:30:00.000Z"
+  "databaseTime": "2026-09-08T01:00:00.000Z"
 }
 ```
 
@@ -114,13 +132,11 @@ Respons `500 Internal Server Error`:
 }
 ```
 
-## 4. Categories
+## 5. Categories
 
-### GET `/categories`
+### `GET /categories`
 
-Mengambil semua kategori Help Center yang aktif dan mengurutkannya berdasarkan `sortOrder`.
-
-Contoh request:
+Mengambil semua kategori aktif dan mengurutkannya berdasarkan `sortOrder`.
 
 ```http
 GET /api/categories
@@ -140,17 +156,17 @@ Respons `200 OK`:
       "description": "Informasi terkait proses impor dan kepabeanan.",
       "icon": "package-import",
       "sortOrder": 1,
-      "isActive": true,
-      "createdAt": "2026-09-01T06:30:00.000Z",
-      "updatedAt": "2026-09-01T06:30:00.000Z"
+      "isActive": true
     }
   ]
 }
 ```
 
-### GET `/categories/:categorySlug`
+## 6. Subcategories
 
-Mengambil detail satu kategori berdasarkan slug.
+### `GET /categories/:categorySlug/subcategories`
+
+Mengambil seluruh subkategori aktif dalam satu kategori.
 
 Path parameter:
 
@@ -158,49 +174,11 @@ Path parameter:
 | -------------- | ------ | ----- | ------------------ |
 | `categorySlug` | string | Ya    | `impor-kepabeanan` |
 
-Contoh request:
-
-```http
-GET /api/categories/impor-kepabeanan
-```
-
-Respons `200 OK`:
-
-```json
-{
-  "success": true,
-  "message": "Kategori berhasil ditemukan",
-  "data": {
-    "id": 1,
-    "name": "Impor & Kepabeanan",
-    "slug": "impor-kepabeanan",
-    "description": "Informasi terkait proses impor dan kepabeanan.",
-    "icon": "package-import",
-    "sortOrder": 1
-  }
-}
-```
-
-Respons `404 Not Found`:
-
-```json
-{
-  "success": false,
-  "message": "Kategori tidak ditemukan"
-}
-```
-
-### GET `/categories/:categorySlug/subcategories`
-
-Mengambil seluruh subkategori aktif dalam satu kategori.
-
-Contoh request:
-
 ```http
 GET /api/categories/impor-kepabeanan/subcategories
 ```
 
-Respons `200 OK`:
+Contoh respons `200 OK`:
 
 ```json
 {
@@ -218,15 +196,56 @@ Respons `200 OK`:
         "name": "PIB",
         "slug": "pib",
         "description": "Informasi mengenai Pemberitahuan Impor Barang.",
-        "icon": "file-text",
+        "sortOrder": 1
+      }
+    ]
+  }
+}
+```
+
+Kategori yang valid tetapi belum memiliki subkategori mengembalikan `200 OK` dengan `subcategories: []`.
+
+## 7. FAQ topics
+
+### `GET /subcategories/:subcategorySlug/topics`
+
+Mengambil topik aktif dalam satu subkategori.
+
+Path parameter:
+
+| Parameter         | Tipe   | Wajib | Contoh |
+| ----------------- | ------ | ----- | ------ |
+| `subcategorySlug` | string | Ya    | `pib`  |
+
+```http
+GET /api/subcategories/pib/topics
+```
+
+Contoh respons `200 OK`:
+
+```json
+{
+  "success": true,
+  "message": "Topik berhasil diambil",
+  "data": {
+    "subcategory": {
+      "id": 1,
+      "name": "PIB",
+      "slug": "pib"
+    },
+    "topics": [
+      {
+        "id": 1,
+        "name": "Pendahuluan PIB",
+        "slug": "pendahuluan-pib",
+        "description": "Informasi mengenai Pendahuluan PIB.",
         "sortOrder": 1
       },
       {
         "id": 2,
-        "name": "DO Online/SP2",
-        "slug": "do-online-sp2",
-        "description": "Informasi layanan Delivery Order Online dan SP2.",
-        "icon": "file-check",
+        "name": "Tracking PIB",
+        "slug": "tracking-pib",
+        "description": "Informasi mengenai Tracking PIB.",
         "sortOrder": 2
       }
     ]
@@ -234,148 +253,75 @@ Respons `200 OK`:
 }
 ```
 
-Jika kategori ditemukan tetapi belum mempunyai subkategori, API mengembalikan `200 OK` dengan `subcategories: []`.
+## 8. FAQs berdasarkan topik
 
-## 5. Subcategories
+### `GET /topics/:topicSlug/faqs`
 
-### GET `/subcategories/:subcategorySlug`
-
-Mengambil detail subkategori beserta kategori induknya.
-
-Contoh request:
-
-```http
-GET /api/subcategories/pib
-```
-
-Respons `200 OK`:
-
-```json
-{
-  "success": true,
-  "message": "Subkategori berhasil ditemukan",
-  "data": {
-    "id": 1,
-    "name": "PIB",
-    "slug": "pib",
-    "description": "Informasi mengenai Pemberitahuan Impor Barang.",
-    "icon": "file-text",
-    "category": {
-      "id": 1,
-      "name": "Impor & Kepabeanan",
-      "slug": "impor-kepabeanan"
-    }
-  }
-}
-```
-
-### GET `/subcategories/:subcategorySlug/faqs`
-
-Mengambil daftar FAQ yang dipublikasikan dalam satu subkategori. Endpoint ini mendukung pagination.
+Mengambil FAQ yang dipublikasikan dalam satu topik.
 
 Query parameter:
 
-| Parameter | Tipe    | Wajib | Default | Keterangan                |
-| --------- | ------- | ----- | ------- | ------------------------- |
-| `page`    | integer | Tidak | `1`     | Nomor halaman             |
-| `limit`   | integer | Tidak | `6`     | Jumlah FAQ, maksimal `50` |
-
-Contoh request:
+| Parameter | Tipe    | Wajib | Default | Keterangan              |
+| --------- | ------- | ----- | ------- | ----------------------- |
+| `page`    | integer | Tidak | `1`     | Nomor halaman           |
+| `limit`   | integer | Tidak | `6`     | Jumlah data per halaman |
 
 ```http
-GET /api/subcategories/pib/faqs?page=1&limit=6
+GET /api/topics/tracking-pib/faqs?page=1&limit=6
 ```
 
-Respons `200 OK`:
+Contoh item pada respons:
 
 ```json
 {
-  "success": true,
-  "message": "FAQ berhasil diambil",
-  "data": {
-    "subcategory": {
-      "id": 1,
-      "name": "PIB",
-      "slug": "pib"
-    },
-    "faqs": [
-      {
-        "id": 1,
-        "question": "Apa itu PIB?",
-        "answer": "PIB adalah pemberitahuan pabean untuk pengeluaran barang impor.",
-        "isPopular": true,
-        "sortOrder": 1
-      }
-    ]
+  "id": 5,
+  "question": "Apa maksud dari NSW Reject dan BC Reject di status tracking dokumen saya",
+  "answer": "<p>Pastikan asal dan status penyebab reject...</p>",
+  "isPopular": false,
+  "sortOrder": 1,
+  "topic": {
+    "name": "Tracking PIB",
+    "slug": "tracking-pib"
   },
-  "meta": {
-    "page": 1,
-    "limit": 6,
-    "totalItems": 1,
-    "totalPages": 1,
-    "hasNextPage": false,
-    "hasPreviousPage": false
+  "subcategory": {
+    "name": "PIB",
+    "slug": "pib"
+  },
+  "category": {
+    "name": "Impor & Kepabeanan",
+    "slug": "impor-kepabeanan"
   }
 }
 ```
 
-## 6. FAQs
+## 9. Semua FAQ dan pencarian
 
-### GET `/faqs`
+### `GET /faqs`
 
-Mengambil daftar FAQ yang dipublikasikan. Dapat digunakan oleh search bar, filter kategori, dan pagination.
+Digunakan untuk daftar semua FAQ, pencarian global, FAQ populer, dan pagination.
 
 Query parameter:
 
-| Parameter     | Tipe    | Wajib | Default | Keterangan                          |
-| ------------- | ------- | ----- | ------- | ----------------------------------- |
-| `search`      | string  | Tidak | —       | Mencari pada pertanyaan dan jawaban |
-| `category`    | string  | Tidak | —       | Filter berdasarkan slug kategori    |
-| `subcategory` | string  | Tidak | —       | Filter berdasarkan slug subkategori |
-| `popular`     | boolean | Tidak | —       | Gunakan `true` untuk FAQ populer    |
-| `page`        | integer | Tidak | `1`     | Nomor halaman                       |
-| `limit`       | integer | Tidak | `6`     | Jumlah data, maksimal `50`          |
+| Parameter | Tipe    | Wajib | Default | Keterangan                               |
+| --------- | ------- | ----- | ------- | ---------------------------------------- |
+| `search`  | string  | Tidak | —       | Mencari teks pada pertanyaan dan jawaban |
+| `popular` | boolean | Tidak | —       | Isi `true` untuk mengambil FAQ populer   |
+| `page`    | integer | Tidak | `1`     | Nomor halaman                            |
+| `limit`   | integer | Tidak | `6`     | Jumlah data per halaman                  |
 
-Contoh request:
+Pencarian:
 
 ```http
-GET /api/faqs?search=status%20PIB&category=impor-kepabeanan&page=1&limit=6
+GET /api/faqs?search=tracking%20PIB&page=1&limit=6
+```
+
+FAQ populer:
+
+```http
+GET /api/faqs?popular=true&page=1&limit=3
 ```
 
 Respons `200 OK`:
-
-```json
-{
-  "success": true,
-  "message": "FAQ berhasil diambil",
-  "data": [
-    {
-      "id": 2,
-      "question": "Bagaimana cara memantau status pengajuan PIB?",
-      "answer": "Status pengajuan dapat dipantau melalui layanan terkait pada Portal INSW.",
-      "isPopular": true,
-      "category": {
-        "name": "Impor & Kepabeanan",
-        "slug": "impor-kepabeanan"
-      },
-      "subcategory": {
-        "name": "PIB",
-        "slug": "pib"
-      }
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 6,
-    "totalItems": 1,
-    "totalPages": 1,
-    "hasNextPage": false,
-    "hasPreviousPage": false
-  }
-}
-```
-
-Jika pencarian tidak menghasilkan data, API tetap mengembalikan `200 OK`:
 
 ```json
 {
@@ -393,282 +339,161 @@ Jika pencarian tidak menghasilkan data, API tetap mengembalikan `200 OK`:
 }
 ```
 
-### GET `/faqs/popular`
+Pencarian tanpa hasil tetap mengembalikan `200 OK` dengan `data: []` dan bukan `404`.
 
-Mengambil FAQ yang memiliki `isPopular: true` untuk bagian FAQ Populer pada halaman utama.
+Jawaban FAQ dapat berisi HTML yang telah dibersihkan pada backend. Frontend merendernya pada komponen accordion.
 
-Query parameter:
+## 10. Guides
 
-| Parameter | Tipe    | Wajib | Default | Keterangan                        |
-| --------- | ------- | ----- | ------- | --------------------------------- |
-| `limit`   | integer | Tidak | `3`     | Jumlah FAQ populer, maksimal `10` |
-
-Contoh request:
-
-```http
-GET /api/faqs/popular?limit=3
-```
-
-Respons `200 OK`:
-
-```json
-{
-  "success": true,
-  "message": "FAQ populer berhasil diambil",
-  "data": [
-    {
-      "id": 1,
-      "question": "Bagaimana cara registrasi akun INSW?",
-      "answer": "Pengguna dapat melakukan registrasi melalui Portal INSW.",
-      "category": {
-        "name": "Registrasi & Akun",
-        "slug": "registrasi"
-      }
-    }
-  ]
-}
-```
-
-> Penting: route `/faqs/popular` harus didaftarkan sebelum `/faqs/:faqId` agar kata `popular` tidak dianggap sebagai ID.
-
-### GET `/faqs/:faqId`
-
-Mengambil detail satu FAQ berdasarkan ID.
-
-Path parameter:
-
-| Parameter | Tipe    | Wajib | Contoh |
-| --------- | ------- | ----- | ------ |
-| `faqId`   | integer | Ya    | `1`    |
-
-Respons `200 OK`:
-
-```json
-{
-  "success": true,
-  "message": "FAQ berhasil ditemukan",
-  "data": {
-    "id": 1,
-    "question": "Apa itu PIB?",
-    "answer": "PIB adalah pemberitahuan pabean untuk pengeluaran barang impor.",
-    "isPopular": true,
-    "category": {
-      "name": "Impor & Kepabeanan",
-      "slug": "impor-kepabeanan"
-    },
-    "subcategory": {
-      "name": "PIB",
-      "slug": "pib"
-    }
-  }
-}
-```
-
-## 7. Guides
-
-PDF tidak disimpan sebagai binary di PostgreSQL. Database hanya menyimpan metadata dan URL/path file.
-
-### GET `/guides`
+### `GET /guides`
 
 Mengambil daftar panduan yang dipublikasikan.
 
-Query parameter:
-
-| Parameter  | Tipe    | Wajib | Default | Keterangan                       |
-| ---------- | ------- | ----- | ------- | -------------------------------- |
-| `category` | string  | Tidak | —       | Filter berdasarkan slug kategori |
-| `search`   | string  | Tidak | —       | Pencarian judul/deskripsi        |
-| `page`     | integer | Tidak | `1`     | Nomor halaman                    |
-| `limit`    | integer | Tidak | `6`     | Jumlah data, maksimal `50`       |
-
-Contoh request:
-
 ```http
-GET /api/guides?category=impor-kepabeanan&page=1&limit=6
+GET /api/guides?page=1&limit=6
 ```
 
-Contoh item response:
+Contoh item:
 
 ```json
 {
   "id": 1,
-  "title": "Panduan Pengisian PIB",
-  "slug": "panduan-pengisian-pib",
-  "description": "Panduan langkah demi langkah pengisian PIB.",
-  "thumbnailUrl": "/uploads/guides/pib-thumbnail.webp",
-  "fileUrl": "/uploads/guides/panduan-pib.pdf",
-  "category": {
-    "name": "Impor & Kepabeanan",
-    "slug": "impor-kepabeanan"
-  }
+  "title": "Panduan Registrasi Akun INSW",
+  "slug": "panduan-registrasi-akun-insw",
+  "description": "Panduan registrasi akun pengguna INSW.",
+  "thumbnailUrl": null,
+  "fileUrl": "https://example.com/panduan.pdf",
+  "sortOrder": 1
 }
 ```
 
-### GET `/guides/:guideSlug`
+### `GET /guides/:guideSlug`
 
-Mengambil detail satu panduan untuk ditampilkan pada PDF Viewer.
-
-Contoh request:
+Mengambil satu panduan berdasarkan slug.
 
 ```http
-GET /api/guides/panduan-pengisian-pib
+GET /api/guides/panduan-registrasi-akun-insw
 ```
 
-Respons `200 OK`:
+Respons `404 Not Found` diberikan jika slug tidak ditemukan.
 
-```json
-{
-  "success": true,
-  "message": "Panduan berhasil ditemukan",
-  "data": {
-    "id": 1,
-    "title": "Panduan Pengisian PIB",
-    "slug": "panduan-pengisian-pib",
-    "description": "Panduan langkah demi langkah pengisian PIB.",
-    "thumbnailUrl": "/uploads/guides/pib-thumbnail.webp",
-    "fileUrl": "/uploads/guides/panduan-pib.pdf",
-    "publishedAt": "2026-09-01T06:30:00.000Z"
-  }
-}
-```
+## 11. Tutorials
 
-## 8. Tutorials
-
-Video tidak disimpan sebagai binary di PostgreSQL. Database hanya menyimpan metadata dan URL video/thumbnail.
-
-### GET `/tutorials`
+### `GET /tutorials`
 
 Mengambil daftar tutorial yang dipublikasikan.
 
-Query parameter:
+```http
+GET /api/tutorials?page=1&limit=6
+```
 
-| Parameter  | Tipe    | Wajib | Default | Keterangan                       |
-| ---------- | ------- | ----- | ------- | -------------------------------- |
-| `category` | string  | Tidak | —       | Filter berdasarkan slug kategori |
-| `search`   | string  | Tidak | —       | Pencarian judul/deskripsi        |
-| `page`     | integer | Tidak | `1`     | Nomor halaman                    |
-| `limit`    | integer | Tidak | `6`     | Jumlah data, maksimal `50`       |
-
-Contoh item response:
+Contoh item:
 
 ```json
 {
   "id": 1,
-  "title": "Tutorial Pengajuan PIB",
-  "slug": "tutorial-pengajuan-pib",
-  "description": "Tutorial proses pengajuan PIB melalui Portal INSW.",
-  "thumbnailUrl": "/uploads/tutorials/pib-thumbnail.webp",
-  "videoUrl": "https://www.youtube.com/watch?v=example",
-  "durationSeconds": 420,
-  "category": {
-    "name": "Impor & Kepabeanan",
-    "slug": "impor-kepabeanan"
-  }
+  "title": "Tutorial Registrasi INSW",
+  "slug": "tutorial-registrasi-insw",
+  "description": "Video tutorial registrasi akun INSW.",
+  "thumbnailUrl": "https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg",
+  "videoUrl": "https://www.youtube.com/watch?v=VIDEO_ID",
+  "durationSeconds": null,
+  "sortOrder": 1
 }
 ```
 
-### GET `/tutorials/:tutorialSlug`
+### `GET /tutorials/:tutorialSlug`
 
-Mengambil detail tutorial dan langkah-langkahnya.
-
-Contoh request:
+Mengambil satu tutorial berdasarkan slug.
 
 ```http
-GET /api/tutorials/tutorial-pengajuan-pib
+GET /api/tutorials/tutorial-registrasi-insw
 ```
 
-Respons `200 OK`:
+Respons `404 Not Found` diberikan jika slug tidak ditemukan.
 
-```json
-{
-  "success": true,
-  "message": "Tutorial berhasil ditemukan",
-  "data": {
-    "id": 1,
-    "title": "Tutorial Pengajuan PIB",
-    "slug": "tutorial-pengajuan-pib",
-    "description": "Tutorial proses pengajuan PIB melalui Portal INSW.",
-    "thumbnailUrl": "/uploads/tutorials/pib-thumbnail.webp",
-    "videoUrl": "https://www.youtube.com/watch?v=example",
-    "durationSeconds": 420,
-    "steps": [
-      {
-        "id": 1,
-        "stepNumber": 1,
-        "title": "Masuk ke Portal INSW",
-        "description": "Buka Portal INSW dan masuk menggunakan akun yang terdaftar."
-      }
-    ]
-  }
-}
-```
+## 12. Status HTTP
 
-## 9. Validasi Parameter
+| Status                      | Arti                     | Penggunaan                                        |
+| --------------------------- | ------------------------ | ------------------------------------------------- |
+| `200 OK`                    | Request berhasil         | Data berhasil diambil atau hasil pencarian kosong |
+| `400 Bad Request`           | Parameter tidak valid    | Nilai page, limit, atau parameter lain salah      |
+| `404 Not Found`             | Resource tidak ditemukan | Slug atau ID tidak ditemukan                      |
+| `500 Internal Server Error` | Kesalahan server         | Koneksi database atau proses server gagal         |
 
-Ketentuan umum:
+## 13. Integrasi frontend
 
-- `page` harus berupa bilangan bulat minimal `1`.
-- `limit` harus berupa bilangan bulat minimal `1` dan maksimal `50`.
-- `faqId` harus berupa bilangan bulat positif.
-- Nilai `popular` hanya menerima `true` atau `false`.
-- Slug harus berupa huruf kecil, angka, dan tanda hubung.
-- Kata pencarian harus dipangkas dari spasi berlebih.
-- Input dari pengguna tidak boleh digabungkan langsung ke query SQL.
-
-Respons `400 Bad Request`:
-
-```json
-{
-  "success": false,
-  "message": "Parameter tidak valid",
-  "errors": [
-    {
-      "field": "page",
-      "message": "Page minimal bernilai 1"
-    }
-  ]
-}
-```
-
-## 10. HTTP Status Codes
-
-| Status                      | Kegunaan                                             |
-| --------------------------- | ---------------------------------------------------- |
-| `200 OK`                    | Request berhasil                                     |
-| `400 Bad Request`           | Parameter atau input tidak valid                     |
-| `404 Not Found`             | Resource tidak ditemukan                             |
-| `429 Too Many Requests`     | Terlalu banyak request jika rate limiting diaktifkan |
-| `500 Internal Server Error` | Kesalahan internal API atau database                 |
-
-## 11. CORS dan Environment
-
-Development frontend yang diizinkan:
+Konfigurasi frontend:
 
 ```env
-CLIENT_URL=http://localhost:5173
+VITE_API_URL=http://localhost:5001/api
 ```
 
-Environment backend minimal:
+Lokasi fungsi API client:
 
-```env
-PORT=5001
-CLIENT_URL=http://localhost:5173
-DATABASE_URL=postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE_NAME
+```text
+client/src/services/api.js
 ```
 
-File `.env` tidak boleh dimasukkan ke Git. Repository hanya menyimpan `.env.example` tanpa kredensial asli.
+Pemetaan penggunaan:
 
-## 12. Scope Autentikasi
+| Fungsi frontend                   | Endpoint                                      |
+| --------------------------------- | --------------------------------------------- |
+| `getCategories()`                 | `GET /categories`                             |
+| `getSubcategories(categorySlug)`  | `GET /categories/:categorySlug/subcategories` |
+| `getTopics(subcategorySlug)`      | `GET /subcategories/:subcategorySlug/topics`  |
+| `getTopicFaqs(topicSlug, params)` | `GET /topics/:topicSlug/faqs`                 |
+| `getFaqs(params)`                 | `GET /faqs`                                   |
+| `getGuides(params)`               | `GET /guides`                                 |
+| `getGuideBySlug(slug)`            | `GET /guides/:guideSlug`                      |
+| `getTutorials(params)`            | `GET /tutorials`                              |
+| `getTutorialBySlug(slug)`         | `GET /tutorials/:tutorialSlug`                |
 
-Endpoint publik di dokumen ini tidak membutuhkan login karena pengguna Help Center hanya membaca informasi.
+## 14. Sumber dan proses impor FAQ
 
-Autentikasi, dashboard admin, serta endpoint `POST`, `PUT`, dan `DELETE` belum termasuk scope saat ini. Jika dashboard pengelolaan konten ditambahkan, endpoint admin harus ditempatkan pada `/api/admin`, dilindungi autentikasi, otorisasi role, validasi input, dan rate limiting.
+Konten FAQ lama dapat diambil dari respons layanan CMS INSW, kemudian dipetakan ke struktur database redesign.
 
-## 13. Aturan Pemeliharaan Dokumentasi
+```text
+API/CMS INSW → importer backend → PostgreSQL → REST API project → React
+```
 
-- Ubah status endpoint menjadi **Tersedia** hanya setelah endpoint berhasil diuji.
-- Perbarui contoh response saat kontrak API berubah.
-- Jangan menuliskan password, token, atau data rahasia pada dokumentasi.
-- Dokumentasi API dan implementasi endpoint sebaiknya masuk dalam commit yang sama.
-- Catat breaking change jika nama field, URL, atau struktur response berubah.
+Importer menggunakan `sourceId` agar data sumber yang sama dapat diperbarui dengan proses upsert dan tidak menghasilkan duplikasi.
 
+Jalankan importer:
+
+```bash
+npm run import:faqs
+```
+
+## 15. Menjalankan dan menguji API
+
+Jalankan backend:
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Uji endpoint menggunakan browser, Postman, atau Thunder Client:
+
+```text
+http://localhost:5001/api/health
+http://localhost:5001/api/categories
+http://localhost:5001/api/faqs?page=1&limit=6
+http://localhost:5001/api/guides?page=1&limit=6
+http://localhost:5001/api/tutorials?page=1&limit=6
+```
+
+## 16. Catatan keamanan
+
+- Endpoint saat ini hanya menyediakan konten publik dan tidak memerlukan login.
+- Kredensial PostgreSQL hanya disimpan pada file `.env` backend.
+- File `.env` tidak boleh dikirim ke GitHub.
+- Parameter request harus divalidasi pada backend.
+- HTML jawaban dari sumber eksternal harus disanitasi sebelum disimpan atau dikirim.
+- Pesan error production tidak boleh membocorkan query SQL atau stack trace.
+
+## 17. Pemeliharaan dokumentasi
+
+Dokumentasi harus diperbarui ketika endpoint, parameter, bentuk respons, atau status implementasi berubah.
