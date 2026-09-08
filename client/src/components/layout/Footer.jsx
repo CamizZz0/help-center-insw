@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 export default function Footer() {
     return (
         <footer className="bg-[#062E6F] text-white">
-            <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-3">
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-3 md:gap-10">
                 <div>
-                    <h2 className="text-xl font-bold">
+                    <h2 className="text-lg font-bold sm:text-xl">
                         Indonesia National Single Window
                     </h2>
 
-                    <p className="mt-4 max-w-sm text-sm leading-6 text-blue-100">
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-blue-100 sm:mt-4">
                         Pusat informasi, panduan, dan layanan bantuan
                         penggunaan sistem INSW.
                     </p>
@@ -20,7 +20,7 @@ export default function Footer() {
                         Pusat Bantuan
                     </h2>
 
-                    <div className="mt-4 flex flex-col gap-3 text-sm text-blue-100">
+                    <nav className="mt-4 flex flex-col items-start gap-3 text-sm text-blue-100">
                         <Link to="/" className="hover:text-white">
                             Beranda Pusat Bantuan
                         </Link>
@@ -32,10 +32,20 @@ export default function Footer() {
                             FAQ
                         </Link>
 
-                        <a href="#" className="hover:text-white">
-                            Panduan & Tutorial
-                        </a>
-                    </div>
+                        <Link
+                            to="/panduan"
+                            className="hover:text-white"
+                        >
+                            Panduan Pengguna
+                        </Link>
+
+                        <Link
+                            to="/tutorial"
+                            className="hover:text-white"
+                        >
+                            Video Tutorial
+                        </Link>
+                    </nav>
                 </div>
 
                 <div>
@@ -43,16 +53,18 @@ export default function Footer() {
                         Hubungi Kami
                     </h2>
 
-                    <div className="mt-4 space-y-3 text-sm text-blue-100">
+                    <div className="mt-4 space-y-3 text-sm leading-6 text-blue-100">
                         <p>Contact Center: 150-679</p>
-                        <p>Email: info@insw.go.id</p>
+                        <p className="break-all">
+                            Email: info@insw.go.id
+                        </p>
                         <p>Senin–Jumat, 08.00–17.00 WIB</p>
                     </div>
                 </div>
             </div>
 
             <div className="border-t border-white/20">
-                <div className="mx-auto max-w-7xl px-6 py-5 text-center text-sm text-blue-100">
+                <div className="mx-auto max-w-7xl px-4 py-5 text-center text-xs leading-5 text-blue-100 sm:px-6 sm:text-sm">
                     © {new Date().getFullYear()} Lembaga National
                     Single Window. Hak cipta dilindungi.
                 </div>

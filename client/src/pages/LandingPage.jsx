@@ -56,18 +56,22 @@ export default function LandingPage() {
                         Pusat Bantuan
                     </h1>
 
+                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+                        Temukan jawaban, panduan, dan tutorial penggunaan layanan INSW.
+                    </p>
+
                     <HeroSearch />
                 </div>
             </section>
 
-            <main className="bg-slate-50 px-6 py-16">
+            <main className="bg-slate-50 px-4 py-12 sm:px-6 sm:py-16">
                 <section className="mx-auto max-w-7xl">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-900">
+                        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                             Pilih Kategori FAQ
                         </h2>
 
-                        <p className="mt-3 text-slate-600">
+                        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
                             Pilih kategori yang sesuai dengan informasi
                             yang sedang Anda cari.
                         </p>
@@ -82,7 +86,7 @@ export default function LandingPage() {
                             {error}
                         </p>
                     ) : (
-                        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                             {categories.map((category) => (
                                 <CategoryCard
                                     key={category.id}

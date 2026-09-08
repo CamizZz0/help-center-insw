@@ -1,12 +1,14 @@
+import { Phone } from "lucide-react";
+
 export default function HelpCard() {
     return (
-        <section className="rounded-xl border border-blue-300 bg-blue-100 px-6 py-6 md:flex md:items-center md:justify-between md:gap-8">
+        <section className="rounded-xl border border-blue-300 bg-blue-100 p-5 sm:p-6 md:flex md:items-center md:justify-between md:gap-8">
             <div>
-                <h2 className="text-2xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
                     Masih Butuh Bantuan?
                 </h2>
 
-                <p className="mt-2 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
                     Hubungi Contact Center INSW untuk mendapatkan
                     bantuan lebih lanjut.
                 </p>
@@ -14,9 +16,9 @@ export default function HelpCard() {
 
             <a
                 href="tel:150679"
-                className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#062E6F] px-6 py-3 font-medium text-white transition hover:bg-blue-800 md:mt-0"
+                className="mt-5 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#062E6F] px-6 py-3 font-medium text-white transition hover:bg-blue-800 md:mt-0 md:w-auto"
             >
-                <span aria-hidden="true">☎</span>
+                <Phone size={19} />
                 Hubungi Kami
             </a>
         </section>

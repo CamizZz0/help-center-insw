@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+
 import {
     getFaqs,
     getTopicFaqs,
@@ -8,11 +10,11 @@ import FaqAccordion from "../components/FaqAccordion";
 import Pagination from "../components/Pagination";
 import SearchBar from "../components/SearchBar";
 import FaqSidebar from "../components/FaqSidebar";
-import { useParams } from "react-router-dom";
+import HelpCard from "../components/HelpCard";
+
 import Header from "../components/layout/Header";
 import Breadcrumb from "../components/layout/Breadcrumb";
 import CategoryHero from "../components/layout/CategoryHero";
-import HelpCard from "../components/HelpCard";
 import Footer from "../components/layout/Footer";
 
 const CATEGORY_NAMES = {
@@ -92,10 +94,13 @@ export default function FaqPage() {
                         limit: 6,
                     });
                 } else if (selectedTopic) {
-                    result = await getTopicFaqs(selectedTopic.slug, {
-                        page,
-                        limit: 6,
-                    });
+                    result = await getTopicFaqs(
+                        selectedTopic.slug,
+                        {
+                            page,
+                            limit: 6,
+                        }
+                    );
                 } else {
                     result = await getFaqs({
                         page,
@@ -103,10 +108,17 @@ export default function FaqPage() {
                     });
                 }
 
-                setFaqs(result.data);
-                setMeta(result.meta);
+                setFaqs(
+                    Array.isArray(result?.data)
+                        ? result.data
+                        : []
+                );
+
+                setMeta(result?.meta ?? null);
             } catch (err) {
-                setError(err.message);
+                setError(
+                    err.message || "Gagal mengambil data FAQ."
+                );
             } finally {
                 setLoading(false);
             }
@@ -122,66 +134,84 @@ export default function FaqPage() {
             <Breadcrumb categoryName={categoryName} />
 
             <CategoryHero categoryName={categoryName} />
-            <main className="min-h-screen bg-slate-50 p-8">
+
+            <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
                 <div className="mx-auto max-w-7xl">
-                    <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-                        <div>
+                    <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-8">
+                        <div className="min-w-0">
                             <SearchBar
                                 value={searchInput}
                                 onChange={setSearchInput}
-                                onClear={() => setSearchInput("")}
+                                onClear={() =>
+                                    setSearchInput("")
+                                }
+                                placeholder={`Cari pertanyaan ${categoryName}...`}
                             />
 
                             <div className="mt-4">
                                 <FaqSidebar
                                     categorySlug={categorySlug}
-                                    selectedTopicSlug={selectedTopic?.slug}
-                                    onSelectTopic={handleSelectTopic}
+                                    selectedTopicSlug={
+                                        selectedTopic?.slug
+                                    }
+                                    onSelectTopic={
+                                        handleSelectTopic
+                                    }
                                 />
                             </div>
                         </div>
 
-                        <section>
-                            <h1 className="text-3xl font-bold text-slate-900">
+                        <section className="min-w-0">
+                            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                                 {search
                                     ? "Hasil Pencarian"
-                                    : selectedTopic?.name ?? "Semua FAQ"}
+                                    : selectedTopic?.name ??
+                                    "Semua FAQ"}
                             </h1>
 
-                            <p className="mt-2 text-slate-600">
+                            <p className="mt-2 text-sm text-slate-600 sm:text-base">
                                 {search
-                                    ? `${meta?.totalItems ?? 0} hasil untuk “${search}”`
-                                    : `Total FAQ: ${meta?.totalItems ?? 0}`}
+                                    ? `${meta?.totalItems ?? 0
+                                    } hasil untuk “${search}”`
+                                    : `Total FAQ: ${meta?.totalItems ?? 0
+                                    }`}
                             </p>
 
                             {loading ? (
-                                <div className="mt-8 rounded-xl border border-slate-200 bg-white p-8">
-                                    <p className="text-slate-600">
+                                <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 sm:mt-8 sm:p-8">
+                                    <p className="text-sm text-slate-600 sm:text-base">
                                         Memuat FAQ...
                                     </p>
                                 </div>
                             ) : error ? (
-                                <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-8">
-                                    <p className="text-red-600">{error}</p>
+                                <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 sm:mt-8 sm:p-8">
+                                    <p className="break-words text-sm text-red-600 sm:text-base">
+                                        {error}
+                                    </p>
                                 </div>
                             ) : faqs.length === 0 ? (
-                                <div className="mt-8 rounded-xl border border-slate-200 bg-white p-8 text-center">
+                                <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-center sm:mt-8 sm:p-8">
                                     <h2 className="font-semibold text-slate-900">
                                         FAQ tidak ditemukan
                                     </h2>
 
-                                    <p className="mt-2 text-slate-600">
-                                        Coba pilih topik atau kata kunci lain.
+                                    <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                                        Coba pilih topik atau kata
+                                        kunci lain.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="mt-8 space-y-4">
+                                <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
                                     {faqs.map((faq) => (
                                         <FaqAccordion
                                             key={faq.id}
                                             faq={faq}
-                                            isOpen={openFaqId === faq.id}
-                                            onToggle={() => handleToggle(faq.id)}
+                                            isOpen={
+                                                openFaqId === faq.id
+                                            }
+                                            onToggle={() =>
+                                                handleToggle(faq.id)
+                                            }
                                         />
                                     ))}
                                 </div>
@@ -191,16 +221,20 @@ export default function FaqPage() {
                                 <Pagination
                                     currentPage={meta.page}
                                     totalPages={meta.totalPages}
-                                    onPageChange={handlePageChange}
+                                    onPageChange={
+                                        handlePageChange
+                                    }
                                 />
                             )}
                         </section>
                     </div>
-                    <div className="mt-12">
+
+                    <div className="mt-8 sm:mt-12">
                         <HelpCard />
                     </div>
                 </div>
             </main>
+
             <Footer />
         </>
     );

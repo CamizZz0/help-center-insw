@@ -40,32 +40,32 @@ export default function PopularFaqSection() {
     }
 
     return (
-        <section className="bg-[#EFF7FF] px-6 py-16">
+        <section className="bg-[#EFF7FF] px-4 py-12 sm:px-6 sm:py-16">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-10 flex items-center justify-center gap-3">
+                <div className="mb-8 flex items-center justify-center gap-3 sm:mb-10">
                     <Star
-                        className="text-yellow-500"
+                        className="shrink-0 text-yellow-500"
                         fill="currentColor"
-                        size={28}
+                        size={26}
                     />
 
-                    <h2 className="text-3xl font-bold text-slate-900">
+                    <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                         FAQ Populer
                     </h2>
                 </div>
 
-                <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-                    <div className="space-y-4">
+                <div className="grid items-stretch gap-6 lg:grid-cols-[2fr_1fr] lg:gap-8">
+                    <div className="min-w-0 space-y-4">
                         {loading ? (
-                            <div className="rounded-xl bg-white p-8 text-slate-600">
+                            <div className="rounded-xl bg-white p-5 text-sm text-slate-600 sm:p-8 sm:text-base">
                                 Memuat FAQ populer...
                             </div>
                         ) : error ? (
-                            <div className="rounded-xl bg-red-50 p-8 text-red-600">
+                            <div className="rounded-xl bg-red-50 p-5 text-sm text-red-600 sm:p-8 sm:text-base">
                                 {error}
                             </div>
                         ) : faqs.length === 0 ? (
-                            <div className="rounded-xl bg-white p-8 text-slate-600">
+                            <div className="rounded-xl bg-white p-5 text-sm text-slate-600 sm:p-8 sm:text-base">
                                 Belum ada FAQ populer.
                             </div>
                         ) : (
@@ -82,13 +82,13 @@ export default function PopularFaqSection() {
                         )}
                     </div>
 
-                    <aside className="flex flex-col justify-between rounded-2xl bg-[#062E6F] p-8 text-white">
+                    <aside className="flex flex-col justify-between rounded-2xl bg-[#062E6F] p-5 text-white sm:p-8">
                         <div>
-                            <h3 className="text-2xl font-bold">
+                            <h3 className="text-xl font-bold sm:text-2xl">
                                 Masih Butuh Bantuan?
                             </h3>
 
-                            <p className="mt-4 leading-7 text-blue-100">
+                            <p className="mt-3 text-sm leading-6 text-blue-100 sm:mt-4 sm:text-base sm:leading-7">
                                 Hubungi Contact Center INSW untuk
                                 mendapatkan bantuan lebih lanjut.
                             </p>
@@ -96,7 +96,7 @@ export default function PopularFaqSection() {
 
                         <a
                             href="tel:150679"
-                            className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-slate-900 hover:bg-yellow-300"
+                            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-slate-900 transition hover:bg-yellow-300 sm:mt-8"
                         >
                             <Phone size={20} />
                             Hubungi Kami

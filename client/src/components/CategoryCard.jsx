@@ -27,19 +27,23 @@ export default function CategoryCard({ category }) {
     return (
         <Link
             to={`/faq/${category.slug}`}
-            className="group flex min-h-32 items-center gap-5 rounded-xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md"
+            className="group flex min-h-28 items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 sm:min-h-32 sm:gap-5 sm:p-6"
         >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                <Icon size={26} strokeWidth={1.8} />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 sm:h-12 sm:w-12">
+                <Icon
+                    size={24}
+                    strokeWidth={1.8}
+                    className="sm:h-[26px] sm:w-[26px]"
+                />
             </div>
 
-            <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">
+            <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                     {category.name}
                 </h3>
 
                 {category.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-600 sm:mt-2 sm:text-sm">
                         {category.description}
                     </p>
                 )}
@@ -47,7 +51,7 @@ export default function CategoryCard({ category }) {
 
             <ArrowRight
                 size={20}
-                className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                className="shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-600"
             />
         </Link>
     );
