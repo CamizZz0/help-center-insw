@@ -56,6 +56,77 @@ const importSources = [
             },
         },
     },
+
+    {
+        fileName: "ssm-qc-impor-ekspor.json",
+        subcategorySlug: "ssm-qc-impor-ekspor",
+
+        topicNameMapping: {
+            "Ketentuan Umum": {
+                name: "Ketentuan Umum",
+                slug: "ketentuan-umum-ssm-qc",
+            },
+
+            "Registrasi Akun": {
+                name: "Registrasi Akun",
+                slug: "registrasi-akun-ssm-qc",
+            },
+
+            "Aplikasi": {
+                name: "Aplikasi",
+                slug: "aplikasi-ssm-qc",
+            },
+        },
+    },
+
+    {
+        fileName: "btki-2022.json",
+        subcategorySlug: "btki-2022",
+
+        topicNameMapping: {
+            "Perizinan dan Rekomendasi": {
+                name: "Perizinan dan Rekomendasi",
+                slug: "perizinan-rekomendasi-btki-2022",
+            },
+
+            "Modul PIB dan PEB": {
+                name: "Modul PIB dan PEB",
+                slug: "modul-pib-peb-btki-2022",
+            },
+
+            "Informasi Umum": {
+                name: "Informasi Umum",
+                slug: "informasi-umum-btki-2022",
+            },
+
+            "e-COO": {
+                name: "e-COO",
+                slug: "e-coo-btki-2022",
+            },
+
+            "Fasilitas": {
+                name: "Fasilitas",
+                slug: "fasilitas-btki-2022",
+            },
+
+            "Penelusuran tabel korelasi": {
+                name: "Penelusuran Tabel Korelasi",
+                slug: "penelusuran-tabel-korelasi-btki-2022",
+            },
+        },
+    },
+
+    {
+        fileName: "modul-pertek-rekom.json",
+        subcategorySlug: "modul-pertek-rekom",
+
+        topicNameMapping: {
+            "Pengisian data pada sistem INSW": {
+                name: "Pengisian Data pada Sistem INSW",
+                slug: "pengisian-data-insw-pertek-rekom",
+            },
+        },
+    },
 ];
 
 function createSlug(value = "") {
