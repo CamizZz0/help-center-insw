@@ -127,6 +127,39 @@ const importSources = [
             },
         },
     },
+
+    {
+        fileName: "peb.json",
+        subcategorySlug: "peb",
+        topicMapping: {
+            "Penjelasan PEB": {
+                name: "Pendahuluan PEB",
+                slug: "pendahuluan-peb",
+            },
+            "Tracking PEB": {
+                name: "Tracking PEB",
+                slug: "tracking-peb",
+            },
+            "Reject Dokumen": {
+                name: "Reject Dokumen PEB",
+                slug: "reject-dokumen-peb",
+            },
+        },
+    },
+    {
+        fileName: "coo-ska.json",
+        subcategorySlug: "coo-ska",
+        topicMapping: {
+            "Penjelasan COO": {
+                name: "Pendahuluan COO/SKA",
+                slug: "pendahuluan-coo-ska",
+            },
+            "Tracking e-COO": {
+                name: "Tracking e-COO",
+                slug: "tracking-e-coo",
+            },
+        },
+    },
 ];
 
 function createSlug(value = "") {
@@ -332,14 +365,15 @@ async function saveFaq(
         topicId: savedTopic.id,
         question,
         answer: cleanAnswer(
-            sourceFaq.jawaban
+            sourceFaq.jawaban ||
+            sourceFaq.ur ||
+            ""
         ),
         isPopular: false,
         sortOrder: faqIndex + 1,
         isPublished: true,
         updatedAt: new Date(),
     };
-
     const [existingFaq] = await tx
         .select({
             id: faqs.id,
@@ -461,17 +495,9 @@ async function importFaqs() {
                             }
 
                             const mappedTopic =
-                                importSource
-                                    .topicNameMapping[
-                                sourceTopic.ur
-                                ] ?? {
-                                    name:
-                                        sourceTopic.ur,
-                                    slug:
-                                        createSlug(
-                                            sourceTopic.ur
-                                        ) ||
-                                        `topik-${sourceTopic.kd_subkategori_faq}`,
+                                importSource.topicNameMapping?.[sourceTopic.ur] ?? {
+                                    name: sourceTopic.ur,
+                                    slug: `${importSource.subcategorySlug}-topik-${sourceTopic.kd_subkategori_faq}`,
                                 };
 
                             const savedTopic =

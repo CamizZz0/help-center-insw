@@ -208,11 +208,71 @@ async function seedPibTopics() {
     console.log("Seed topik PIB berhasil.");
 }
 
+async function seedExportSubcategories() {
+    const [exportCategory] = await db
+        .select({
+            id: categories.id,
+        })
+        .from(categories)
+        .where(eq(categories.slug, "ekspor"))
+        .limit(1);
+
+    if (!exportCategory) {
+        throw new Error("Kategori Ekspor tidak ditemukan.");
+    }
+
+    const exportSubcategoryData = [
+        {
+            categoryId: exportCategory.id,
+            name: "PEB",
+            slug: "peb",
+            description:
+                "Informasi mengenai Pemberitahuan Ekspor Barang.",
+            icon: "file-text",
+            sortOrder: 1,
+        },
+        {
+            categoryId: exportCategory.id,
+            name: "COO/SKA",
+            slug: "coo-ska",
+            description:
+                "Informasi mengenai Certificate of Origin dan Surat Keterangan Asal.",
+            icon: "badge-check",
+            sortOrder: 2,
+        },
+    ];
+
+    for (const subcategory of exportSubcategoryData) {
+        await db
+            .insert(subcategories)
+            .values(subcategory)
+            .onConflictDoUpdate({
+                target: subcategories.slug,
+                set: {
+                    categoryId: subcategory.categoryId,
+                    name: subcategory.name,
+                    description: subcategory.description,
+                    icon: subcategory.icon,
+                    sortOrder: subcategory.sortOrder,
+                    isActive: true,
+                    updatedAt: new Date(),
+                },
+            });
+    }
+
+    console.log("Seed subkategori Ekspor berhasil.");
+}
+
 async function seed() {
     try {
         await seedCategories();
+
         await seedImportSubcategories();
         await seedPibTopics();
+
+        await seedExportSubcategories();
+
+        console.log("Seluruh proses seed berhasil.");
     } catch (error) {
         console.error("Proses seed gagal:", error);
         process.exitCode = 1;
