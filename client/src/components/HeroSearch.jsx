@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function HeroSearch({
     initialValue = "",
 }) {
+    const location = useLocation();
+
+    return (
+        <SearchForm
+            key={JSON.stringify([location.key, initialValue])}
+            initialValue={initialValue}
+        />
+    );
+}
+
+function SearchForm({ initialValue }) {
     const [keyword, setKeyword] = useState(initialValue);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        setKeyword(initialValue);
-    }, [initialValue]);
 
     function handleSubmit(event) {
         event.preventDefault();

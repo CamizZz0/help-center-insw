@@ -7,22 +7,14 @@ export default function GuideCard({ guide }) {
     return (
         <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-md">
             <div className="aspect-video overflow-hidden bg-blue-50">
-                {guide.thumbnailUrl ? (
-                    <img
-                        src={guide.thumbnailUrl}
-                        alt={`Sampul ${guide.title}`}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
+                <div className="flex h-full w-full items-center justify-center">
+                    <FileText
+                        size={56}
+                        strokeWidth={1.5}
+                        aria-hidden="true"
+                        className="text-blue-600 sm:h-16 sm:w-16"
                     />
-                ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                        <FileText
-                            size={56}
-                            strokeWidth={1.5}
-                            className="text-blue-600 sm:h-16 sm:w-16"
-                        />
-                    </div>
-                )}
+                </div>
             </div>
 
             <div className="flex flex-1 flex-col p-5 sm:p-6">

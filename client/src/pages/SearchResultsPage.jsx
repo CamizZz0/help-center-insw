@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import { getFaqs } from "../services/api";
 
@@ -11,52 +11,62 @@ import FaqAccordion from "../components/FaqAccordion";
 import Pagination from "../components/Pagination";
 
 export default function SearchResultsPage() {
-    const [searchParams, setSearchParams] =
-        useSearchParams();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
 
     const query = searchParams.get("q")?.trim() ?? "";
 
-    const page = Math.max(
-        Number(searchParams.get("page")) || 1,
-        1
-    );
+    const requestedPage = Number(searchParams.get("page"));
+    const page = Number.isInteger(requestedPage) && requestedPage > 0
+        ? requestedPage
+        : 1;
 
+    return (
+        <SearchResultsContent
+            key={location.key}
+            query={query}
+            page={page}
+        />
+    );
+}
+
+function SearchResultsContent({ query, page }) {
+    const [, setSearchParams] = useSearchParams();
     const [faqs, setFaqs] = useState([]);
     const [meta, setMeta] = useState(null);
     const [openFaqId, setOpenFaqId] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(Boolean(query));
     const [error, setError] = useState("");
 
     useEffect(() => {
+        if (!query) return;
+
+        let ignoreResult = false;
+
         async function loadResults() {
-            if (!query) {
-                setFaqs([]);
-                setMeta(null);
-                setLoading(false);
-                return;
-            }
-
             try {
-                setLoading(true);
-                setError("");
-                setOpenFaqId(null);
-
                 const result = await getFaqs({
                     search: query,
                     page,
                     limit: 6,
                 });
 
+                if (ignoreResult) return;
+
                 setFaqs(result.data);
                 setMeta(result.meta);
             } catch (err) {
-                setError(err.message);
+                if (!ignoreResult) setError(err.message);
             } finally {
-                setLoading(false);
+                if (!ignoreResult) setLoading(false);
             }
         }
 
         loadResults();
+
+        return () => {
+            ignoreResult = true;
+        };
     }, [query, page]);
 
     function handleToggle(faqId) {
