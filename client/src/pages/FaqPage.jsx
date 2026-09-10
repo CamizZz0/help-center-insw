@@ -6,6 +6,7 @@ import {
 
 import {
     getFaqs,
+    getSubcategories,
     getTopicFaqs,
 } from "../services/api";
 
@@ -19,25 +20,6 @@ import Header from "../components/layout/Header";
 import Breadcrumb from "../components/layout/Breadcrumb";
 import CategoryHero from "../components/layout/CategoryHero";
 import Footer from "../components/layout/Footer";
-
-const CATEGORY_NAMES = {
-    "impor-kepabeanan": "Impor & Kepabeanan",
-    ekspor: "Ekspor",
-    "registrasi-akun": "Registrasi & Akun",
-    "portal-insw": "Portal INSW",
-    "perizinan-rekomendasi":
-        "Perizinan & Rekomendasi",
-    "fasilitas-kawasan": "Fasilitas & Kawasan",
-    "layanan-lainnya": "Layanan Lainnya",
-};
-
-const DEFAULT_TOPIC_BY_CATEGORY = {
-    "impor-kepabeanan": "pendahuluan-pib",
-};
-
-const DEFAULT_TOPIC_NAMES = {
-    "pendahuluan-pib": "Pendahuluan PIB",
-};
 
 function extractFaqList(result) {
     const possibleLists = [
@@ -57,7 +39,18 @@ function extractFaqList(result) {
 
 export default function FaqPage() {
     const { categorySlug } = useParams();
+    const [searchParams] = useSearchParams();
+    const topicSlug = searchParams.get("topic") ?? "";
 
+    return (
+        <CategoryFaqContent
+            key={JSON.stringify([categorySlug, topicSlug])}
+            categorySlug={categorySlug}
+        />
+    );
+}
+
+function CategoryFaqContent({ categorySlug }) {
     const [searchParams, setSearchParams] =
         useSearchParams();
 
@@ -81,18 +74,14 @@ export default function FaqPage() {
     const [
         selectedTopicName,
         setSelectedTopicName,
-    ] = useState(
-        DEFAULT_TOPIC_NAMES[topicSlug] ?? ""
-    );
+    ] = useState("");
 
     const [searchInput, setSearchInput] =
         useState("");
 
     const [search, setSearch] = useState("");
 
-    const categoryName =
-        CATEGORY_NAMES[categorySlug] ??
-        "Kategori FAQ";
+    const [categoryName, setCategoryName] = useState("");
 
     function handleToggle(faqId) {
         setOpenFaqId((currentId) =>
@@ -124,50 +113,6 @@ export default function FaqPage() {
     }
 
     /*
-     * Memberikan topik default pada kategori.
-     * Impor & Kepabeanan otomatis membuka
-     * Pendahuluan PIB.
-     */
-    useEffect(() => {
-        const defaultTopic =
-            DEFAULT_TOPIC_BY_CATEGORY[
-            categorySlug
-            ];
-
-        if (!topicSlug && defaultTopic) {
-            setSearchParams(
-                {
-                    topic: defaultTopic,
-                },
-                {
-                    replace: true,
-                }
-            );
-        }
-    }, [
-        categorySlug,
-        topicSlug,
-        setSearchParams,
-    ]);
-
-    /*
-     * Menyesuaikan judul ketika URL topik berubah.
-     */
-    useEffect(() => {
-        if (!topicSlug) {
-            setSelectedTopicName("");
-            return;
-        }
-
-        const defaultName =
-            DEFAULT_TOPIC_NAMES[topicSlug];
-
-        if (defaultName) {
-            setSelectedTopicName(defaultName);
-        }
-    }, [topicSlug]);
-
-    /*
      * Debounce pencarian selama 400 ms.
      */
     useEffect(() => {
@@ -187,28 +132,29 @@ export default function FaqPage() {
         let ignoreResult = false;
 
         async function loadFaqs() {
-            /*
-             * Menunggu URL topik default dipasang
-             * agar tidak mengambil semua FAQ.
-             */
-            const defaultTopic =
-                DEFAULT_TOPIC_BY_CATEGORY[
-                categorySlug
-                ];
-
-            if (!topicSlug && defaultTopic) {
-                return;
-            }
-
             try {
                 setLoading(true);
                 setError("");
+                setMeta(null);
+
+                const categoryResult = await getSubcategories(categorySlug);
+
+                if (ignoreResult) return;
+
+                const category = categoryResult?.data?.category;
+
+                if (!category || category.slug !== categorySlug) {
+                    throw new Error("Kategori FAQ tidak ditemukan.");
+                }
+
+                setCategoryName(category.name);
 
                 let result;
 
                 if (search) {
                     result = await getFaqs({
                         search,
+                        category: categorySlug,
                         page,
                         limit: 6,
                     });
@@ -222,6 +168,7 @@ export default function FaqPage() {
                     );
                 } else {
                     result = await getFaqs({
+                        category: categorySlug,
                         page,
                         limit: 6,
                     });
@@ -233,6 +180,13 @@ export default function FaqPage() {
 
                 const faqList =
                     extractFaqList(result);
+
+                if (
+                    topicSlug && !search &&
+                    result?.data?.category?.slug !== categorySlug
+                ) {
+                    throw new Error("Topik FAQ tidak ditemukan dalam kategori ini.");
+                }
 
                 setFaqs(faqList);
                 setMeta(result?.meta ?? null);
@@ -248,13 +202,8 @@ export default function FaqPage() {
                     );
                 }
 
-                if (
-                    topicSlug &&
-                    faqList[0]?.topic?.name
-                ) {
-                    setSelectedTopicName(
-                        faqList[0].topic.name
-                    );
+                if (topicSlug && !search) {
+                    setSelectedTopicName(result?.data?.topic?.name ?? "");
                 }
             } catch (err) {
                 if (!ignoreResult) {
@@ -287,11 +236,11 @@ export default function FaqPage() {
             <Header />
 
             <Breadcrumb
-                categoryName={categoryName}
+                categoryName={categoryName || "Kategori FAQ"}
             />
 
             <CategoryHero
-                categoryName={categoryName}
+                categoryName={categoryName || "Kategori FAQ"}
             />
 
             <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -306,7 +255,9 @@ export default function FaqPage() {
                                 onClear={() =>
                                     setSearchInput("")
                                 }
-                                placeholder={`Cari pertanyaan ${categoryName}...`}
+                                placeholder={categoryName
+                                    ? `Cari pertanyaan ${categoryName}...`
+                                    : "Cari pertanyaan dalam kategori ini..."}
                             />
 
                             <div className="mt-4">
@@ -332,7 +283,7 @@ export default function FaqPage() {
                                 {search
                                     ? "Hasil Pencarian"
                                     : selectedTopicName ||
-                                    "Pilih Topik FAQ"}
+                                    (categoryName ? `FAQ ${categoryName}` : "FAQ Kategori")}
                             </h1>
 
                             <p className="mt-2 text-sm text-slate-600 sm:text-base">
