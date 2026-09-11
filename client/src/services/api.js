@@ -2,12 +2,22 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 async function request(endpoint) {
     const response = await fetch(`${API_URL}${endpoint}`);
+    const result = await response.json();
 
     if (!response.ok) {
-        throw new Error("Gagal mengambil data dari server");
+        throw new Error(result.message ?? "Gagal mengambil data dari server");
     }
 
-    return response.json();
+    return result;
+}
+
+function createQuery(params = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
+    });
+    const queryString = query.toString();
+    return queryString ? `?${queryString}` : "";
 }
 
 export function getCategories() {
@@ -107,5 +117,18 @@ export function getTutorials({
 export function getTutorialBySlug(slug) {
     return request(
         `/tutorials/${encodeURIComponent(slug)}`
+    );
+}
+
+export function searchHelpCenter(
+    query,
+    options = {},
+) {
+    return request(
+        `/search${createQuery({
+            q: query,
+            page: options.page ?? 1,
+            limit: options.limit ?? 6,
+        })}`,
     );
 }
