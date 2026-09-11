@@ -1,7 +1,6 @@
 import {
     ChevronRight,
     CircleHelp,
-    Clock3,
     ExternalLink,
     FileText,
     PlayCircle,
@@ -101,35 +100,6 @@ function TypeBadge({ type }) {
             {details.label}
         </span>
     );
-}
-
-function formatDuration(seconds) {
-    if (
-        seconds === undefined ||
-        seconds === null
-    ) {
-        return "";
-    }
-
-    const totalSeconds =
-        Number(seconds);
-
-    if (
-        !Number.isFinite(totalSeconds) ||
-        totalSeconds < 0
-    ) {
-        return "";
-    }
-
-    const minutes = Math.floor(
-        totalSeconds / 60,
-    );
-
-    const remainingSeconds = String(
-        totalSeconds % 60,
-    ).padStart(2, "0");
-
-    return `${minutes}:${remainingSeconds}`;
 }
 
 export default function SearchResultCard({
@@ -232,11 +202,7 @@ export default function SearchResultCard({
                     <div className="min-w-0">
                         <p className="text-sm text-slate-600">
                             <HighlightText
-                                text={
-                                    item.category
-                                        ?.name ??
-                                    "Panduan INSW"
-                                }
+                                text="Panduan INSW"
                                 query={query}
                             />
                         </p>
@@ -282,16 +248,11 @@ export default function SearchResultCard({
                         "Beranda",
                         "Pusat Bantuan",
                         "Panduan",
-                        item.category?.name,
                     ]}
                 />
             </article>
         );
     }
-
-    const duration = formatDuration(
-        item.durationSeconds,
-    );
 
     return (
         <article className={cardClass}>
@@ -308,12 +269,7 @@ export default function SearchResultCard({
                         <div className="min-w-0">
                             <p className="text-sm text-slate-600">
                                 <HighlightText
-                                    text={
-                                        item
-                                            .category
-                                            ?.name ??
-                                        "Tutorial INSW"
-                                    }
+                                    text="Tutorial INSW"
                                     query={query}
                                 />
                             </p>
@@ -341,17 +297,6 @@ export default function SearchResultCard({
                         />
                     </p>
 
-                    {duration && (
-                        <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-slate-500">
-                            <Clock3
-                                size={14}
-                                aria-hidden="true"
-                            />
-
-                            {duration}
-                        </p>
-                    )}
-
                     <div>
                         <a
                             href={
@@ -376,8 +321,6 @@ export default function SearchResultCard({
                             "Beranda",
                             "Pusat Bantuan",
                             "Tutorial",
-                            item.category
-                                ?.name,
                         ]}
                     />
                 </div>

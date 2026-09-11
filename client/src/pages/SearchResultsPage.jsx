@@ -72,11 +72,6 @@ export default function SearchResultsPage() {
 
     useEffect(() => {
         if (!query) {
-            setItems([]);
-            setMeta(null);
-            setLoading(false);
-            setError("");
-
             return;
         }
 
@@ -226,11 +221,23 @@ export default function SearchResultsPage() {
         );
     }
 
+    const visibleMeta = query
+        ? meta
+        : null;
+
+    const visibleError = query
+        ? error
+        : "";
+
+    const isLoading = query
+        ? loading
+        : false;
+
     const totalItems =
-        meta?.totalItems ?? 0;
+        visibleMeta?.totalItems ?? 0;
 
     const totalPages =
-        meta?.totalPages ?? 1;
+        visibleMeta?.totalPages ?? 1;
 
     return (
         <>
@@ -272,11 +279,11 @@ export default function SearchResultsPage() {
                         maxWidth: "72rem",
                     }}
                 >
-                    {loading ? (
+                    {isLoading ? (
                         <SearchLoadingSkeleton />
-                    ) : error ? (
+                    ) : visibleError ? (
                         <SearchError
-                            error={error}
+                            error={visibleError}
                             onRetry={retry}
                         />
                     ) : totalItems === 0 ? (
@@ -336,7 +343,7 @@ export default function SearchResultsPage() {
 
                             <Pagination
                                 currentPage={
-                                    meta?.page ??
+                                    visibleMeta?.page ??
                                     page
                                 }
                                 totalPages={Math.max(

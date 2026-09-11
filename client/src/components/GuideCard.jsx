@@ -18,13 +18,7 @@ export default function GuideCard({ guide }) {
             </div>
 
             <div className="flex flex-1 flex-col p-5 sm:p-6">
-                {guide.category?.name && (
-                    <p className="break-words text-xs font-medium text-blue-600 sm:text-sm">
-                        {guide.category.name}
-                    </p>
-                )}
-
-                <h2 className="mt-2 break-words text-lg font-bold leading-7 text-slate-900 sm:text-xl">
+                <h2 className="break-words text-lg font-bold leading-7 text-slate-900 sm:text-xl">
                     {guide.title}
                 </h2>
 

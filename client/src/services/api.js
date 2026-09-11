@@ -77,16 +77,11 @@ export function getFaqs({
 export function getGuides({
     page = 1,
     limit = 6,
-    category = "",
 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
     });
-
-    if (category) {
-        params.set("category", category);
-    }
 
     return request(`/guides?${params}`);
 }
@@ -100,16 +95,11 @@ export function getGuideBySlug(slug) {
 export function getTutorials({
     page = 1,
     limit = 6,
-    category = "",
 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
     });
-
-    if (category) {
-        params.set("category", category);
-    }
 
     return request(`/tutorials?${params}`);
 }

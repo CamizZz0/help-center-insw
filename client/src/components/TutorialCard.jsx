@@ -4,10 +4,6 @@ import {
 } from "lucide-react";
 
 export default function TutorialCard({ tutorial }) {
-    const duration = tutorial.durationSeconds == null
-        ? ""
-        : `${Math.floor(tutorial.durationSeconds / 60)}:${String(tutorial.durationSeconds % 60).padStart(2, "0")}`;
-
     return (
         <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-md">
             <div className="relative aspect-video overflow-hidden bg-slate-200">
@@ -29,21 +25,10 @@ export default function TutorialCard({ tutorial }) {
                     </div>
                 </div>
 
-                {duration && (
-                    <span className="absolute bottom-3 right-3 rounded-md bg-slate-950/80 px-2 py-1 text-xs font-semibold text-white">
-                        {duration}
-                    </span>
-                )}
             </div>
 
             <div className="flex flex-1 flex-col p-5 sm:p-6">
-                {tutorial.category?.name && (
-                    <p className="break-words text-xs font-medium text-blue-600 sm:text-sm">
-                        {tutorial.category.name}
-                    </p>
-                )}
-
-                <h2 className="mt-2 break-words text-lg font-bold leading-7 text-slate-900 sm:text-xl">
+                <h2 className="break-words text-lg font-bold leading-7 text-slate-900 sm:text-xl">
                     {tutorial.title}
                 </h2>
 
