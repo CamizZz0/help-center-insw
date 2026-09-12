@@ -5,6 +5,8 @@ import {
     SlidersHorizontal,
 } from "lucide-react";
 
+import ContentIcon from "./ContentIcon";
+
 import {
     getCategories,
     getSubcategories,
@@ -275,10 +277,23 @@ export default function FaqSidebar({
                                                 : "font-medium text-slate-700 hover:bg-slate-50"
                                                 }`}
                                         >
-                                            <span className="min-w-0 break-words">
-                                                {
-                                                    subcategory.name
-                                                }
+                                            <span className="flex min-w-0 flex-1 items-center gap-2">
+                                                <ContentIcon
+                                                    iconUrl={
+                                                        subcategory.iconUrl
+                                                    }
+                                                    iconName={
+                                                        subcategory.icon
+                                                    }
+                                                    alt={`Ikon ${subcategory.name}`}
+                                                    className="h-5 w-5 shrink-0"
+                                                />
+
+                                                <span className="min-w-0 break-words">
+                                                    {
+                                                        subcategory.name
+                                                    }
+                                                </span>
                                             </span>
 
                                             {isOpen ? (

@@ -41,11 +41,20 @@ export default function CategoryCard({ category }) {
             className="group flex min-h-28 items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 sm:min-h-32 sm:gap-5 sm:p-6"
         >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 sm:h-12 sm:w-12">
-                <Icon
-                    size={24}
-                    strokeWidth={1.8}
-                    className="sm:h-[26px] sm:w-[26px]"
-                />
+                {category.iconUrl ? (
+                    <img
+                        src={category.iconUrl}
+                        alt={`Ikon ${category.name}`}
+                        loading="lazy"
+                        className="h-6 w-6 object-contain sm:h-[26px] sm:w-[26px]"
+                    />
+                ) : (
+                    <Icon
+                        size={24}
+                        strokeWidth={1.8}
+                        className="sm:h-[26px] sm:w-[26px]"
+                    />
+                )}
             </div>
 
             <div className="min-w-0 flex-1">
