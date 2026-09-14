@@ -1,10 +1,12 @@
 import {
     ChevronRight,
     CircleHelp,
-    ExternalLink,
     FileText,
     PlayCircle,
 } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import VideoModal from "../VideoModal";
 
 const TYPE_DETAILS = {
     faq: {
@@ -108,6 +110,7 @@ export default function SearchResultCard({
     isOpen = false,
     onToggle,
 }) {
+    const [videoOpen, setVideoOpen] = useState(false);
     const type = item.resultType;
 
     const cardClass =
@@ -228,19 +231,12 @@ export default function SearchResultCard({
                     />
                 </p>
 
-                <a
-                    href={item.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                <Link
+                    to={`/panduan/${encodeURIComponent(item.slug)}`}
                     className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:underline"
                 >
-                    Buka panduan
-
-                    <ExternalLink
-                        size={15}
-                        aria-hidden="true"
-                    />
-                </a>
+                    Lihat detail panduan
+                </Link>
 
                 <ResultBreadcrumb
                     query={query}
@@ -255,76 +251,89 @@ export default function SearchResultCard({
     }
 
     return (
-        <article className={cardClass}>
-            <div className="flex items-start gap-4 sm:gap-5">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-[#062E6F]">
-                    <PlayCircle
-                        size={28}
-                        aria-hidden="true"
-                    />
-                </div>
+        <>
+            <article className={cardClass}>
+                <div className="flex items-start gap-4 sm:gap-5">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-[#062E6F]">
+                        <PlayCircle
+                            size={28}
+                            aria-hidden="true"
+                        />
+                    </div>
 
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-5">
-                        <div className="min-w-0">
-                            <p className="text-sm text-slate-600">
-                                <HighlightText
-                                    text="Tutorial INSW"
-                                    query={query}
-                                />
-                            </p>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-5">
+                            <div className="min-w-0">
+                                <p className="text-sm text-slate-600">
+                                    <HighlightText
+                                        text="Tutorial INSW"
+                                        query={query}
+                                    />
+                                </p>
 
-                            <h2 className="mt-2 font-semibold leading-6 text-slate-900">
-                                <HighlightText
-                                    text={
-                                        item.title
-                                    }
-                                    query={query}
-                                />
-                            </h2>
+                                <h2 className="mt-2 font-semibold leading-6 text-slate-900">
+                                    <HighlightText
+                                        text={
+                                            item.title
+                                        }
+                                        query={query}
+                                    />
+                                </h2>
+                            </div>
+
+                            <TypeBadge type="tutorial" />
                         </div>
 
-                        <TypeBadge type="tutorial" />
-                    </div>
-
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-700">
-                        <HighlightText
-                            text={
-                                item.description ??
-                                "Video tutorial penggunaan layanan INSW."
-                            }
-                            query={query}
-                        />
-                    </p>
-
-                    <div>
-                        <a
-                            href={
-                                item.videoUrl
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:underline"
-                        >
-                            Tonton tutorial
-
-                            <ExternalLink
-                                size={15}
-                                aria-hidden="true"
+                        <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-700">
+                            <HighlightText
+                                text={
+                                    item.description ??
+                                    "Video tutorial penggunaan layanan INSW."
+                                }
+                                query={query}
                             />
-                        </a>
-                    </div>
+                        </p>
 
-                    <ResultBreadcrumb
-                        query={query}
-                        items={[
-                            "Beranda",
-                            "Pusat Bantuan",
-                            "Tutorial",
-                        ]}
-                    />
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setVideoOpen(true)}
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:underline"
+                            >
+                                Tonton tutorial
+
+                                <PlayCircle
+                                    size={15}
+                                    aria-hidden="true"
+                                />
+                            </button>
+                            <span className="text-slate-300">|</span>
+                            <Link
+                                to={`/tutorial/${encodeURIComponent(item.slug)}`}
+                                className="text-sm font-semibold text-slate-600 hover:text-blue-700 hover:underline"
+                            >
+                                Lihat detail
+                            </Link>
+                        </div>
+
+                        <ResultBreadcrumb
+                            query={query}
+                            items={[
+                                "Beranda",
+                                "Pusat Bantuan",
+                                "Tutorial",
+                            ]}
+                        />
+                    </div>
                 </div>
-            </div>
-        </article>
+            </article>
+
+            <VideoModal
+                open={videoOpen}
+                onClose={() => setVideoOpen(false)}
+                videoUrl={item.videoUrl}
+                title={item.title}
+            />
+        </>
     );
 }
