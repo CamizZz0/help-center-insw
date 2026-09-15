@@ -7,7 +7,10 @@ import CategoryCard from "../components/CategoryCard";
 import HeroSearch from "../components/HeroSearch";
 import GuidesSection from "../components/GuidesSection";
 import PopularFaqSection from "../components/PopularFaqSection";
+import RoleSimulator from "../components/RoleSimulator";
 import Breadcrumb from "../components/layout/Breadcrumb";
+
+import { useViewerRole } from "../utils/viewerRole";
 
 function extractCategories(result) {
     if (Array.isArray(result?.data)) {
@@ -25,6 +28,9 @@ export default function LandingPage() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    // SIMULASI DEMO (bukan login). TODO(auth): ganti dengan sesi pengguna.
+    const [viewerRole, setViewerRole] = useViewerRole();
 
     useEffect(() => {
         async function loadCategories() {
@@ -47,6 +53,8 @@ export default function LandingPage() {
     return (
         <>
             <Header />
+
+            <RoleSimulator viewerRole={viewerRole} onChange={setViewerRole} />
 
             <Breadcrumb />
 
@@ -100,7 +108,7 @@ export default function LandingPage() {
 
             <GuidesSection />
 
-            <PopularFaqSection />
+            <PopularFaqSection viewerRole={viewerRole} />
 
             <Footer />
         </>

@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Phone, Star } from "lucide-react";
 
 import { getFaqs } from "../services/api";
+import { filterFaqsForViewer } from "../utils/viewerRole";
 import FaqAccordion from "./FaqAccordion";
 
-export default function PopularFaqSection() {
+export default function PopularFaqSection({ viewerRole = "guest" }) {
     const [faqs, setFaqs] = useState([]);
     const [openFaqId, setOpenFaqId] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -20,9 +21,13 @@ export default function PopularFaqSection() {
                     popular: true,
                     page: 1,
                     limit: 3,
+                    // SIMULASI DEMO — TODO(auth): hapus setelah backend pakai sesi/JWT.
+                    viewerRole,
                 });
 
-                setFaqs(result.data);
+                // Pertahanan berlapis di frontend (simulasi): saring lagi
+                // sesuai role. Bukan pengaman — backend wajib memfilter.
+                setFaqs(filterFaqsForViewer(result.data, viewerRole));
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -31,7 +36,7 @@ export default function PopularFaqSection() {
         }
 
         loadPopularFaqs();
-    }, []);
+    }, [viewerRole]);
 
     function handleToggle(faqId) {
         setOpenFaqId((currentId) =>
@@ -77,6 +82,7 @@ export default function PopularFaqSection() {
                                     onToggle={() =>
                                         handleToggle(faq.id)
                                     }
+                                    viewerRole={viewerRole}
                                 />
                             ))
                         )}

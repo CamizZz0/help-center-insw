@@ -30,20 +30,32 @@ export function getSubcategories(categorySlug) {
     );
 }
 
-export function getTopics(subcategorySlug) {
+export function getTopics(subcategorySlug, { viewerRole } = {}) {
+    // SIMULASI DEMO: hitungan FAQ per topik mengikuti role.
+    // TODO(auth): hapus setelah backend memakai sesi/JWT.
+    const params = new URLSearchParams();
+
+    if (viewerRole) params.set("viewerRole", viewerRole);
+
+    const query = params.toString();
+
     return request(
-        `/subcategories/${encodeURIComponent(subcategorySlug)}/topics`
+        `/subcategories/${encodeURIComponent(subcategorySlug)}/topics${query ? `?${query}` : ""}`
     );
 }
 
 export function getTopicFaqs(
     topicSlug,
-    { page = 1, limit = 6 } = {}
+    { page = 1, limit = 6, viewerRole } = {}
 ) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
     });
+
+    // SIMULASI DEMO: diteruskan sebagai ?viewerRole= ke API.
+    // TODO(auth): hapus setelah backend memakai sesi/JWT.
+    if (viewerRole) params.set("viewerRole", viewerRole);
 
     return request(
         `/topics/${encodeURIComponent(topicSlug)}/faqs?${params}`
@@ -56,6 +68,7 @@ export function getFaqs({
     popular,
     page = 1,
     limit = 6,
+    viewerRole,
 } = {}) {
     const params = new URLSearchParams({
         search,
@@ -69,6 +82,12 @@ export function getFaqs({
 
     if (category) {
         params.set("category", category);
+    }
+
+    // SIMULASI DEMO: diteruskan sebagai ?viewerRole= ke API.
+    // TODO(auth): hapus setelah backend memakai sesi/JWT.
+    if (viewerRole) {
+        params.set("viewerRole", viewerRole);
     }
 
     return request(`/faqs?${params}`);
@@ -119,6 +138,8 @@ export function searchHelpCenter(
             q: query,
             page: options.page ?? 1,
             limit: options.limit ?? 6,
+            // SIMULASI DEMO — TODO(auth): hapus setelah ada sesi/JWT.
+            viewerRole: options.viewerRole,
         })}`,
     );
 }

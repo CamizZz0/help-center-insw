@@ -2,11 +2,16 @@ import {
     ChevronRight,
     CircleHelp,
     FileText,
+    Lock,
     PlayCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import VideoModal from "../VideoModal";
+import {
+    canViewerSeeFaq,
+    normalizeVisibility,
+} from "../../utils/viewerRole";
 
 const TYPE_DETAILS = {
     faq: {
@@ -109,6 +114,7 @@ export default function SearchResultCard({
     query,
     isOpen = false,
     onToggle,
+    viewerRole = "guest",
 }) {
     const [videoOpen, setVideoOpen] = useState(false);
     const type = item.resultType;
@@ -117,6 +123,67 @@ export default function SearchResultCard({
         "rounded-xl border border-slate-300 bg-white p-5 transition hover:border-blue-300 hover:shadow-sm sm:p-6";
 
     if (type === "faq") {
+        // Gate visibilitas SIMULASI frontend (bukan pengaman).
+        // TODO(auth): andalkan hasil filter backend setelah ada sesi/JWT.
+        if (!canViewerSeeFaq(item, viewerRole)) {
+            const visibility = normalizeVisibility(item.visibility);
+            const isPublished =
+                item?.isPublished ?? item?.is_published ?? true;
+            const needsLogin =
+                isPublished &&
+                visibility === "authenticated" &&
+                viewerRole === "guest";
+
+            if (needsLogin) {
+                return (
+                    <article className={cardClass}>
+                        <div className="flex items-start gap-3">
+                            <Lock
+                                size={18}
+                                aria-hidden="true"
+                                className="mt-1 shrink-0 text-[#062E6F]"
+                            />
+
+                            <div className="min-w-0">
+                                <h2 className="font-semibold leading-6 text-slate-900">
+                                    <HighlightText
+                                        text={item.question}
+                                        query={query}
+                                    />
+                                </h2>
+
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Konten khusus pengguna terdaftar.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    disabled
+                                    title="Demo — login belum tersedia"
+                                    className="mt-3 cursor-not-allowed rounded-xl bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-600"
+                                >
+                                    Masuk untuk membaca
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                );
+            }
+
+            return (
+                <article className={cardClass}>
+                    <h2 className="font-semibold leading-6 text-slate-900">
+                        Konten tidak tersedia
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Hasil ini tidak dapat ditampilkan untuk mode pembaca
+                        Anda saat ini.
+                    </p>
+                </article>
+            );
+        }
+
         const answerSummary =
             stripHtml(item.answer);
 

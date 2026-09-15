@@ -221,6 +221,22 @@ Path parameter:
 GET /api/subcategories/pib/topics
 ```
 
+Mendukung `?viewerRole=guest|authenticated` (simulasi demo). Setiap
+topik menyertakan `faqCount` (jumlah FAQ yang terlihat role tersebut) dan
+`hasRestricted` (ada konten khusus), untuk badge jumlah di sidebar:
+
+```json
+{
+  "id": 2,
+  "name": "Tracking PIB",
+  "slug": "tracking-pib",
+  "description": "Informasi mengenai Tracking PIB.",
+  "sortOrder": 2,
+  "faqCount": 3,
+  "hasRestricted": true
+}
+```
+
 Contoh respons `200 OK`:
 
 ```json
@@ -261,14 +277,46 @@ Mengambil FAQ yang dipublikasikan dalam satu topik.
 
 Query parameter:
 
-| Parameter | Tipe    | Wajib | Default | Keterangan              |
-| --------- | ------- | ----- | ------- | ----------------------- |
-| `page`    | integer | Tidak | `1`     | Nomor halaman           |
-| `limit`   | integer | Tidak | `6`     | Jumlah data per halaman |
+| Parameter    | Tipe    | Wajib | Default | Keterangan                                                        |
+| ------------ | ------- | ----- | ------- | ----------------------------------------------------------------- |
+| `page`       | integer | Tidak | `1`     | Nomor halaman                                                     |
+| `limit`      | integer | Tidak | `6`     | Jumlah data per halaman                                           |
+| `viewerRole` | string  | Tidak | `guest` | Simulasi demo: `guest` \| `authenticated` (bukan auth) |
 
 ```http
 GET /api/topics/tracking-pib/faqs?page=1&limit=6
 ```
+
+Respons topik juga menyertakan metadata demo:
+
+```json
+{
+  "data": {
+    "topic": {},
+    "faqs": [],
+    "locked": [
+      {
+        "id": 9,
+        "question": "Bagaimana memperbarui data profil perusahaan untuk layanan PIB?",
+        "visibility": "authenticated",
+        "isDraft": false,
+        "teaser": "Panduan lanjutan yang hanya tersedia untuk pengguna terdaftar."
+      }
+    ]
+  },
+  "meta": {
+    "visibilityCounts": {
+      "public": 3,
+      "authenticated": 2,
+      "draft": 1,
+      "total": 7
+    }
+  }
+}
+```
+
+> `locked` **tidak pernah** memuat `answer` — Guest melihat judul card
+> terkunci tanpa jawaban bocor via network.
 
 Contoh item pada respons:
 
@@ -278,6 +326,8 @@ Contoh item pada respons:
   "question": "Apa maksud dari NSW Reject dan BC Reject di status tracking dokumen saya",
   "answer": "<p>Pastikan asal dan status penyebab reject...</p>",
   "isPopular": false,
+  "isPublished": true,
+  "visibility": "public",
   "sortOrder": 1,
   "topic": {
     "name": "Tracking PIB",
@@ -302,12 +352,13 @@ Digunakan untuk daftar semua FAQ, pencarian global, FAQ populer, dan pagination.
 
 Query parameter:
 
-| Parameter | Tipe    | Wajib | Default | Keterangan                               |
-| --------- | ------- | ----- | ------- | ---------------------------------------- |
-| `search`  | string  | Tidak | —       | Mencari teks pada pertanyaan dan jawaban |
-| `popular` | boolean | Tidak | —       | Isi `true` untuk mengambil FAQ populer   |
-| `page`    | integer | Tidak | `1`     | Nomor halaman                            |
-| `limit`   | integer | Tidak | `6`     | Jumlah data per halaman                  |
+| Parameter    | Tipe    | Wajib | Default | Keterangan                                                        |
+| ------------ | ------- | ----- | ------- | ----------------------------------------------------------------- |
+| `search`     | string  | Tidak | —       | Mencari teks pada pertanyaan dan jawaban                          |
+| `popular`    | boolean | Tidak | —       | Isi `true` untuk mengambil FAQ populer                            |
+| `page`       | integer | Tidak | `1`     | Nomor halaman                                                     |
+| `limit`      | integer | Tidak | `6`     | Jumlah data per halaman                                           |
+| `viewerRole` | string  | Tidak | `guest` | Simulasi demo: `guest` \| `authenticated` (bukan auth) |
 
 Pencarian:
 
@@ -342,6 +393,34 @@ Respons `200 OK`:
 Pencarian tanpa hasil tetap mengembalikan `200 OK` dengan `data: []` dan bukan `404`.
 
 Jawaban FAQ dapat berisi HTML yang telah dibersihkan pada backend. Frontend merendernya pada komponen accordion.
+
+### Visibilitas FAQ dan `viewerRole` (simulasi demo, bukan autentikasi)
+
+Setiap item FAQ kini menyertakan field:
+
+| Field         | Tipe    | Keterangan                                                              |
+| ------------- | ------- | ----------------------------------------------------------------------- |
+| `isPublished` | boolean | `false` berarti draft (tersembunyi dari publik apa pun visibilitasnya) |
+| `visibility`  | string  | `public` (default) \| `authenticated`                                    |
+
+Aturan tampil berdasarkan `viewerRole`:
+
+| `viewerRole`    | FAQ yang dikembalikan                                             |
+| --------------- | ----------------------------------------------------------------- |
+| `guest`         | published + `public`                                              |
+| `authenticated` | published + `public` / `authenticated`                            |
+
+> TODO(auth): `viewerRole` hanyalah query param simulasi untuk demo.
+> Setelah login resmi tersedia, hapus param ini dan tentukan role dari
+> sesi/JWT di backend. Filtering berbasis role wajib dilakukan di backend.
+
+Endpoint CMS terkait:
+
+| Method    | Endpoint              | Keterangan                                              |
+| --------- | --------------------- | ------------------------------------------------------- |
+| `GET`     | `/cms/faqs`           | Mendukung `?visibility=public\|authenticated`            |
+| `POST`    | `/cms/faqs`           | Body menerima `visibility` (default `public`)           |
+| `PATCH`   | `/cms/faqs/:id`       | Body menerima `visibility`                              |
 
 ## 10. Guides
 

@@ -94,6 +94,7 @@ erDiagram
         boolean is_popular
         integer sort_order
         boolean is_published
+        varchar visibility
         timestamp created_at
         timestamp updated_at
     }
@@ -245,9 +246,20 @@ Menyimpan pertanyaan dan jawaban. Satu topik dapat mempunyai banyak FAQ.
 | `answer`       | `text`                     | Not null                  | Jawaban FAQ; dapat berisi HTML yang telah disanitasi |
 | `is_popular`   | `boolean`                  | Not null, default `false` | Ditampilkan pada FAQ Populer                         |
 | `sort_order`   | `integer`                  | Not null, default `0`     | Urutan FAQ                                           |
-| `is_published` | `boolean`                  | Not null, default `true`  | Status publikasi                                     |
+| `is_published` | `boolean`                  | Not null, default `true`  | Status publikasi (`false` = draft)                   |
+| `visibility`   | `varchar(20)`              | Not null, default `public`| Target pembaca: `public` \| `authenticated`           |
 | `created_at`   | `timestamp with time zone` | Default sekarang          | Waktu dibuat                                         |
 | `updated_at`   | `timestamp with time zone` | Default sekarang          | Waktu diperbarui                                     |
+
+Aturan visibilitas (simulasi demo, bukan autentikasi):
+
+| Mode pembaca            | FAQ yang dapat dilihat                              |
+| ----------------------- | --------------------------------------------------- |
+| Guest                   | published + `public`                                |
+| User login (simulasi)   | published + `public` / `authenticated`              |
+
+> TODO(auth): setelah login resmi tersedia, filtering berbasis role wajib
+> dilakukan di backend dari sesi/JWT. Validasi di frontend hanyalah simulasi.
 
 Foreign key:
 
@@ -349,6 +361,8 @@ Dengan cara ini, importer dapat dijalankan kembali tanpa membuat data yang sama 
 - Hanya kategori dan subkategori dengan `is_active = true` yang ditampilkan.
 - Hanya topik dengan `is_active = true` yang ditampilkan.
 - Hanya FAQ, panduan, dan tutorial dengan `is_published = true` yang ditampilkan.
+- FAQ `is_published = false` dianggap draft untuk semua nilai `visibility`.
+- FAQ lama tanpa `visibility` dianggap `public` (default), sehingga tetap tampil seperti sebelumnya.
 - FAQ populer menggunakan `is_popular = true`.
 - Urutan data menggunakan `sort_order`.
 - Pertanyaan dan jawaban FAQ tidak boleh kosong.
@@ -381,6 +395,7 @@ faqs.source_id
 faqs.topic_id
 faqs.is_popular
 faqs.is_published
+faqs.visibility
 guides.slug
 guides.category_id
 tutorials.slug
@@ -426,7 +441,12 @@ Contoh perintah yang digunakan project:
 ```bash
 npm run import:faqs
 npm run seed:popular
+npm run seed:demo-visibility
 ```
+
+`seed:demo-visibility` menyiapkan 3 FAQ demo di topik `tracking-pib`
+(2 authenticated dan 1 draft; idempoten, aman dijalankan ulang)
+agar perbedaan Guest dan User login terlihat saat presentasi.
 
 Nama script panduan dan tutorial mengikuti konfigurasi pada `server/package.json`.
 

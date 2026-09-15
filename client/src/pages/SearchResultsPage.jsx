@@ -21,6 +21,9 @@ import HeroSearch from "../components/HeroSearch";
 import Pagination from "../components/Pagination";
 
 import SearchResultCard from "../components/search/SearchResultCard";
+import RoleSimulator from "../components/RoleSimulator";
+
+import { useViewerRole } from "../utils/viewerRole";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -42,6 +45,9 @@ export default function SearchResultsPage() {
         searchParams,
         setSearchParams,
     ] = useSearchParams();
+
+    // SIMULASI DEMO (bukan login). TODO(auth): ganti dengan sesi pengguna.
+    const [viewerRole, setViewerRole] = useViewerRole();
 
     const query =
         searchParams
@@ -90,11 +96,17 @@ export default function SearchResultsPage() {
                             page,
                             limit:
                                 ITEMS_PER_PAGE,
+                            // SIMULASI DEMO — TODO(auth): hapus.
+                            viewerRole,
                         },
                     );
 
                 if (!active) return;
 
+                // JANGAN saring FAQ di sini: SearchResultCard me-render
+                // gate SIMULASI (terkunci/"tidak tersedia") untuk item
+                // non-visible. Backend sudah memfilter via ?viewerRole=.
+                // TODO(auth): andalkan filter backend saja.
                 const resultItems =
                     Array.isArray(
                         result.data
@@ -173,6 +185,7 @@ export default function SearchResultsPage() {
         query,
         page,
         refreshKey,
+        viewerRole,
     ]);
 
     function handleToggle(faqId) {
@@ -242,6 +255,8 @@ export default function SearchResultsPage() {
     return (
         <>
             <Header />
+
+            <RoleSimulator viewerRole={viewerRole} onChange={setViewerRole} />
 
             <Breadcrumb
                 categoryName="Hasil Pencarian"
@@ -321,6 +336,7 @@ export default function SearchResultsPage() {
                                             query={
                                                 query
                                             }
+                                            viewerRole={viewerRole}
                                             isOpen={
                                                 item.resultType ===
                                                     "faq" &&

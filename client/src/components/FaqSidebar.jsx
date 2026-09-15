@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
     ChevronDown,
     ChevronRight,
+    Lock,
     SlidersHorizontal,
 } from "lucide-react";
 
@@ -41,6 +42,9 @@ export default function FaqSidebar({
     selectedSubcategorySlug,
     selectedTopicSlug,
     onSelectTopic,
+    // SIMULASI DEMO: jumlah FAQ per topik mengikuti role.
+    // TODO(auth): hapus setelah backend memakai sesi/JWT.
+    viewerRole = "guest",
 }) {
     const [categoryName, setCategoryName] = useState("");
     const [subcategories, setSubcategories] = useState([]);
@@ -110,6 +114,41 @@ export default function FaqSidebar({
         }
     }, [categorySlug]);
 
+    // Muat ulang topik saat role demo diganti agar jumlah ikut berubah.
+    useEffect(() => {
+        if (!openSubcategorySlug) return;
+
+        let ignoreResult = false;
+
+        async function reloadTopicsForRole() {
+            try {
+                setLoadingTopics(true);
+
+                const result = await getTopics(openSubcategorySlug, {
+                    viewerRole,
+                });
+
+                if (!ignoreResult) {
+                    setTopics(
+                        extractList(result, "topics")
+                    );
+                }
+            } catch {
+                // Biarkan daftar lama tampil; error sudah ditangani pemuatan awal.
+            } finally {
+                if (!ignoreResult) {
+                    setLoadingTopics(false);
+                }
+            }
+        }
+
+        reloadTopicsForRole();
+
+        return () => {
+            ignoreResult = true;
+        };
+    }, [viewerRole, openSubcategorySlug]);
+
     useEffect(() => {
         if (
             !selectedSubcategorySlug ||
@@ -139,7 +178,8 @@ export default function FaqSidebar({
                 );
 
                 const result = await getTopics(
-                    selectedSubcategorySlug
+                    selectedSubcategorySlug,
+                    { viewerRole }
                 );
 
                 if (!ignoreResult) {
@@ -184,7 +224,8 @@ export default function FaqSidebar({
             setOpenSubcategorySlug(subcategory.slug);
 
             const result = await getTopics(
-                subcategory.slug
+                subcategory.slug,
+                { viewerRole }
             );
 
             setTopics(extractList(result, "topics"));
@@ -337,15 +378,38 @@ export default function FaqSidebar({
                                                                         topic
                                                                     )
                                                                 }
-                                                                className={`block w-full rounded-md px-3 py-2 text-left text-sm transition ${selectedTopicSlug ===
+                                                                className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition ${selectedTopicSlug ===
                                                                     topic.slug
                                                                     ? "bg-blue-600 font-medium text-white"
                                                                     : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                                                                     }`}
                                                             >
-                                                                {
-                                                                    topic.name
-                                                                }
+                                                                <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                                                                    <span className="min-w-0 flex-1 break-words">
+                                                                        {
+                                                                            topic.name
+                                                                        }
+                                                                    </span>
+
+                                                                    {topic.hasRestricted && (
+                                                                        <Lock
+                                                                            size={13}
+                                                                            aria-label="Memiliki konten khusus"
+                                                                            className={`shrink-0 ${selectedTopicSlug === topic.slug ? "text-white" : "text-[#062E6F]"}`}
+                                                                        />
+                                                                    )}
+                                                                </span>
+
+                                                                {typeof topic.faqCount === "number" && (
+                                                                    <span
+                                                                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${selectedTopicSlug === topic.slug
+                                                                            ? "bg-white/20 text-white"
+                                                                            : "bg-slate-100 text-slate-600"
+                                                                            }`}
+                                                                    >
+                                                                        {topic.faqCount}
+                                                                    </span>
+                                                                )}
                                                             </button>
                                                         )
                                                     )
