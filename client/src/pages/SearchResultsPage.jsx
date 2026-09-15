@@ -304,6 +304,7 @@ export default function SearchResultsPage() {
                     ) : totalItems === 0 ? (
                         <EmptyState
                             query={query}
+                            suggestions={visibleMeta?.suggestions ?? []}
                         />
                     ) : (
                         <>
@@ -321,6 +322,12 @@ export default function SearchResultsPage() {
                                     konten
                                     ditemukan
                                 </p>
+
+                                {visibleMeta?.correctedQuery && (
+                                    <p className="mt-2 text-sm text-slate-600">
+                                        Menampilkan hasil yang juga cocok untuk “{visibleMeta.correctedQuery}”.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-5">
@@ -411,7 +418,7 @@ function SearchError({
     );
 }
 
-function EmptyState({ query }) {
+function EmptyState({ query, suggestions = [] }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center sm:p-12">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
@@ -435,6 +442,26 @@ function EmptyState({ query }) {
                 Coba gunakan kata kunci
                 yang lebih umum.
             </p>
+
+            {suggestions.length > 0 && (
+                <div className="mx-auto mt-5 max-w-xl">
+                    <p className="text-sm font-semibold text-slate-700">
+                        Coba cari:
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
+                        {suggestions.map((suggestion) => (
+                            <Link
+                                key={suggestion}
+                                to={`/search?q=${encodeURIComponent(suggestion)}`}
+                                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-[#062E6F] transition hover:bg-blue-100"
+                            >
+                                {suggestion}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <Link
                 to="/"

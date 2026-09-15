@@ -392,6 +392,11 @@ Respons `200 OK`:
 
 Pencarian tanpa hasil tetap mengembalikan `200 OK` dengan `data: []` dan bukan `404`.
 
+Pencarian juga mengenali singkatan layanan (misalnya `PIB`, `PEB`, `BTKI`,
+`PERTEK`, dan `SKA`), sinonim umum, serta salah ketik ringan. Respons metadata
+dapat memuat `correctedQuery`, `highlightTerms`, dan maksimal tiga `suggestions`
+saat tidak ada hasil.
+
 Jawaban FAQ dapat berisi HTML yang telah dibersihkan pada backend. Frontend merendernya pada komponen accordion.
 
 ### Visibilitas FAQ dan `viewerRole` (simulasi demo, bukan autentikasi)

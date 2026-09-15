@@ -43,10 +43,42 @@ function stripHtml(html = "") {
 
 function HighlightText({
     text = "",
+    query = "",
 }) {
+    const terms = [...new Set(
+        String(query ?? "")
+            .trim()
+            .split(/\s+/)
+            .filter((term) => term.length >= 2),
+    )].sort((left, right) => right.length - left.length);
+
+    if (terms.length === 0) {
+        return <>{String(text ?? "")}</>;
+    }
+
+    const expression = new RegExp(
+        `(${terms
+            .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+            .join("|")})`,
+        "gi",
+    );
+
     return (
         <>
-            {String(text ?? "")}
+            {String(text ?? "")
+                .split(expression)
+                .map((fragment, index) =>
+                    index % 2 === 1 ? (
+                        <mark
+                            key={`${fragment}-${index}`}
+                            className="rounded bg-amber-100 px-0.5 text-inherit"
+                        >
+                            {fragment}
+                        </mark>
+                    ) : (
+                        fragment
+                    ),
+                )}
         </>
     );
 }
