@@ -1,7 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
-async function request(endpoint) {
-    const response = await fetch(`${API_URL}${endpoint}`);
+async function request(endpoint, options = {}) {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...options.headers,
+        },
+    });
     const result = await response.json();
 
     if (!response.ok) {
@@ -142,4 +148,11 @@ export function searchHelpCenter(
             viewerRole: options.viewerRole,
         })}`,
     );
+}
+
+export function submitFaqFeedback(id, payload) {
+    return request(`/faqs/${encodeURIComponent(id)}/feedback`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
 }

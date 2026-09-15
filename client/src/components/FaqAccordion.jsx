@@ -3,6 +3,7 @@ import {
     canViewerSeeFaq,
     normalizeVisibility,
 } from "../utils/viewerRole";
+import FaqFeedback from "./FaqFeedback";
 
 /**
  * Accordion FAQ dengan gate visibilitas (SIMULASI frontend).
@@ -79,6 +80,8 @@ export default function FaqAccordion({
                                 __html: faq.answer,
                             }}
                         />
+
+                        <FaqFeedback faqId={faq.id} viewerRole={viewerRole} />
                     </div>
                 )}
             </article>

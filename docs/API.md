@@ -100,6 +100,7 @@ Detail internal seperti stack trace, query SQL, password, dan connection string 
 | `GET`  | `/guides/:guideSlug`                      | Tersedia | Mengambil satu panduan berdasarkan slug       |
 | `GET`  | `/tutorials`                              | Tersedia | Mengambil daftar video tutorial               |
 | `GET`  | `/tutorials/:tutorialSlug`                | Tersedia | Mengambil satu tutorial berdasarkan slug      |
+| `POST` | `/faqs/:id/feedback`                      | Tersedia | Menyimpan feedback anonim untuk satu FAQ      |
 
 Endpoint detail panduan dan tutorial tetap tersedia untuk kebutuhan integrasi, walaupun frontend saat ini langsung membuka PDF atau YouTube tanpa halaman detail internal.
 

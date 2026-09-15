@@ -32,6 +32,7 @@ React/Vite → Express API → Drizzle ORM → PostgreSQL
 | `faqs`          | Tersedia | Pertanyaan dan jawaban FAQ |
 | `guides`        | Tersedia | Metadata panduan PDF       |
 | `tutorials`     | Tersedia | Metadata video tutorial    |
+| `faq_feedback`  | Tersedia | Feedback anonim untuk FAQ  |
 
 Tabel `tutorial_steps` tidak digunakan karena tutorial saat ini langsung membuka video YouTube dan tidak mempunyai halaman langkah-langkah internal.
 
