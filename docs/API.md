@@ -101,6 +101,8 @@ Detail internal seperti stack trace, query SQL, password, dan connection string 
 | `GET`  | `/tutorials`                              | Tersedia | Mengambil daftar video tutorial               |
 | `GET`  | `/tutorials/:tutorialSlug`                | Tersedia | Mengambil satu tutorial berdasarkan slug      |
 | `POST` | `/faqs/:id/feedback`                      | Tersedia | Menyimpan feedback anonim untuk satu FAQ      |
+| `POST` | `/guides/:id/feedback`                    | Tersedia | Menyimpan feedback anonim untuk satu panduan  |
+| `POST` | `/tutorials/:id/feedback`                 | Tersedia | Menyimpan feedback anonim untuk satu tutorial |
 
 Endpoint detail panduan dan tutorial tetap tersedia untuk kebutuhan integrasi, walaupun frontend saat ini langsung membuka PDF atau YouTube tanpa halaman detail internal.
 
@@ -497,7 +499,63 @@ GET /api/tutorials/tutorial-registrasi-insw
 
 Respons `404 Not Found` diberikan jika slug tidak ditemukan.
 
-## 12. Status HTTP
+## 12. Feedback konten
+
+FAQ, panduan, dan tutorial memakai satu bentuk endpoint feedback yang sama: `POST` ke endpoint detail berbasis ID, bukan slug.
+
+| Endpoint                  | Konten   |
+| ------------------------- | -------- |
+| `POST /faqs/:id/feedback` | FAQ      |
+| `POST /guides/:id/feedback` | Panduan |
+| `POST /tutorials/:id/feedback` | Tutorial |
+
+Body request:
+
+```json
+{
+  "isHelpful": false,
+  "reason": "Jawaban kurang lengkap",
+  "viewerRole": "guest"
+}
+```
+
+- `isHelpful` wajib diisi dan harus berupa boolean (`true` untuk Membantu, `false` untuk Tidak membantu).
+- `reason` opsional, harus berupa teks, maksimal 1.000 karakter, disanitasi `sanitize-html` (tag dihapus), dan hanya disimpan bila `isHelpful` bernilai `false`.
+- `viewerRole` hanya dibaca pada `/faqs/:id/feedback` untuk simulasi role pembaca (`guest` atau `authenticated`); panduan dan tutorial tidak memakainya.
+- ID harus berupa bilangan bulat positif; nilai lain dibalas `400 Bad Request`.
+- Konten yang tidak ada, belum dipublikasikan, atau (khusus FAQ) tidak boleh dilihat oleh `viewerRole` tersebut dibalas `404 Not Found`.
+- **Rate-limit:** `5 request / 60 menit / IP / konten` → `429 Too Many Requests` dengan header `Retry-After` dan `X-RateLimit-*`. Window lebih lama (60 menit) untuk mencegah spam rasio PRD.
+
+### `GET /cms/dashboard/feedback/:contentType/:contentId/reasons`
+
+Mengambil alasan feedback negatif untuk CMS Dashboard drawer (lazy-load).
+
+| Param | Tipe | Keterangan |
+|-------|------|------------|
+| `contentType` | `faq`/`guide`/`tutorial` | Jenis konten |
+| `contentId` | integer | ID konten |
+| `?limit` | integer (default 10, max 50) | Jumlah alasan terbaru |
+
+Respons `200 OK`:
+```json
+{
+  "success": true,
+  "data": [{ "id": 1, "reason": "Kurang lengkap", "createdAt": "2026-09-17T00:00:00Z" }]
+}
+```
+
+Respons `201 Created`:
+
+```json
+{
+  "success": true,
+  "message": "Terima kasih atas feedback Anda."
+}
+```
+
+Tidak ada bagian respons yang mengembalikan feedback yang sudah tersimpan, karena rekapnya hanya dibuka lewat CMS.
+
+## 13. Status HTTP
 
 | Status                      | Arti                     | Penggunaan                                        |
 | --------------------------- | ------------------------ | ------------------------------------------------- |
@@ -506,7 +564,7 @@ Respons `404 Not Found` diberikan jika slug tidak ditemukan.
 | `404 Not Found`             | Resource tidak ditemukan | Slug atau ID tidak ditemukan                      |
 | `500 Internal Server Error` | Kesalahan server         | Koneksi database atau proses server gagal         |
 
-## 13. Integrasi frontend
+## 14. Integrasi frontend
 
 Konfigurasi frontend:
 
@@ -533,8 +591,10 @@ Pemetaan penggunaan:
 | `getGuideBySlug(slug)`            | `GET /guides/:guideSlug`                      |
 | `getTutorials(params)`            | `GET /tutorials`                              |
 | `getTutorialBySlug(slug)`         | `GET /tutorials/:tutorialSlug`                |
+| `submitFaqFeedback(id, payload)`  | `POST /faqs/:id/feedback`                     |
+| `submitFeedback(type, id, payload)` | `POST /faqs/:id/feedback`, `POST /guides/:id/feedback`, atau `POST /tutorials/:id/feedback` |
 
-## 14. Sumber dan proses impor FAQ
+## 15. Sumber dan proses impor FAQ
 
 Konten FAQ lama dapat diambil dari respons layanan CMS INSW, kemudian dipetakan ke struktur database redesign.
 
@@ -550,7 +610,7 @@ Jalankan importer:
 npm run import:faqs
 ```
 
-## 15. Menjalankan dan menguji API
+## 16. Menjalankan dan menguji API
 
 Jalankan backend:
 
@@ -570,7 +630,7 @@ http://localhost:5001/api/guides?page=1&limit=6
 http://localhost:5001/api/tutorials?page=1&limit=6
 ```
 
-## 16. Catatan keamanan
+## 17. Catatan keamanan
 
 - Endpoint saat ini hanya menyediakan konten publik dan tidak memerlukan login.
 - Kredensial PostgreSQL hanya disimpan pada file `.env` backend.
@@ -579,6 +639,6 @@ http://localhost:5001/api/tutorials?page=1&limit=6
 - HTML jawaban dari sumber eksternal harus disanitasi sebelum disimpan atau dikirim.
 - Pesan error production tidak boleh membocorkan query SQL atau stack trace.
 
-## 17. Pemeliharaan dokumentasi
+## 18. Pemeliharaan dokumentasi
 
 Dokumentasi harus diperbarui ketika endpoint, parameter, bentuk respons, atau status implementasi berubah.

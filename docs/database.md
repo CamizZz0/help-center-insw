@@ -32,7 +32,8 @@ React/Vite → Express API → Drizzle ORM → PostgreSQL
 | `faqs`          | Tersedia | Pertanyaan dan jawaban FAQ |
 | `guides`        | Tersedia | Metadata panduan PDF       |
 | `tutorials`     | Tersedia | Metadata video tutorial    |
-| `faq_feedback`  | Tersedia | Feedback anonim untuk FAQ  |
+| `content_feedback` | Tersedia | Feedback anonim untuk FAQ, panduan, dan tutorial |
+| `faq_feedback`  | Legacy   | Feedback FAQ lama, tidak lagi ditulis |
 
 Tabel `tutorial_steps` tidak digunakan karena tutorial saat ini langsung membuka video YouTube dan tidak mempunyai halaman langkah-langkah internal.
 
@@ -130,7 +131,18 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    content_feedback {
+        integer id PK
+        varchar content_type
+        integer content_id
+        boolean is_helpful
+        text reason
+        timestamp created_at
+    }
 ```
+
+`content_feedback` tidak digambar dengan garis relasi karena referensinya polimorfik: pasangan `content_type` + `content_id` menunjuk ke tabel `faqs`, `guides`, atau `tutorials` sesuai nilainya, sehingga PostgreSQL tidak bisa menegakkan foreign key-nya.
 
 ## 4. Hierarki FAQ
 
@@ -309,7 +321,40 @@ Menyimpan metadata video tutorial. File video tidak disimpan sebagai binary di P
 | `created_at`       | `timestamp with time zone` | Default sekarang         | Waktu dibuat             |
 | `updated_at`       | `timestamp with time zone` | Default sekarang         | Waktu diperbarui         |
 
-## 11. Hubungan dan aturan penghapusan
+## 11. Tabel `content_feedback`
+
+Menyimpan feedback anonim pengunjung untuk seluruh jenis konten. Satu tabel dipakai bersama supaya rekap di dashboard CMS bisa dihitung dengan satu query, dan penambahan jenis konten baru tidak memerlukan tabel baru.
+
+| Kolom          | Tipe                       | Constraint                                  | Keterangan                                        |
+| -------------- | -------------------------- | ------------------------------------------- | ------------------------------------------------- |
+| `id`           | `serial`                   | Primary key                                 | Identitas feedback                                |
+| `content_type` | `varchar(20)`              | Not null, `CHECK`                           | Jenis konten: `faq`, `guide`, atau `tutorial`      |
+| `content_id`   | `integer`                  | Not null                                    | ID baris di tabel sesuai `content_type`            |
+| `is_helpful`   | `boolean`                  | Not null                                    | `true` untuk Membantu, `false` untuk Tidak membantu |
+| `reason`       | `text`                     | Nullable                                    | Alasan singkat, hanya diisi saat `is_helpful` bernilai `false` |
+| `created_at`   | `timestamp with time zone` | Default sekarang                            | Waktu feedback dikirim                            |
+
+Index:
+
+- `content_feedback_type_id_idx` pada `(content_type, content_id)` untuk rekap per konten.
+- `content_feedback_created_at_idx` pada `(created_at)` untuk urutan waktu.
+
+Karena `content_id` tidak bisa memakai foreign key, keberadaan dan status terbit konten diperiksa di controller sebelum baris disimpan. Baris feedback juga tidak ikut terhapus saat konten dihapus, sehingga perlu dibersihkan manual bila diperlukan. **Orphan (feedback yatim)** = baris `content_feedback` yang `content_id`-nya tidak ada lagi di `faqs`/`guides`/`tutorials` akibat konten dihapus. Orphan tetap terhitung di `groupBy content_type` dashboard sehingga menggelembungkan total.
+
+**Cleanup orphan:**
+```bash
+npm run cleanup:orphan-feedback        # dry-run, cuma lapor
+npm run cleanup:orphan-feedback:execute # hapus orphan beneran (DELETE ... NOT EXISTS ... RETURNING)
+```
+Script `server/src/scripts/cleanupOrphanFeedback.js` idempoten, aman dijalankan berulang. Jalankan sebelum analisis atau cron mingguan.
+
+**Keamanan reason:** `reason` disanitasi `sanitize-html` (strip tags) sebelum insert (`feedbackController.js`) untuk cegah XSS saat ditampilkan di CMS Drawer `GET /cms/dashboard/feedback/:type/:id/reasons`.
+
+**Rate-limit:** Feedback dibatasi `5 / 60 menit / IP / konten` via `feedbackRateLimit.js` (in-memory Map, 60 menit window lebih lama) → `429` + `Retry-After`. Dashboard memakai endpoint lazy-load `getFeedbackReasons` agar tidak membebani `getCmsDashboard`.
+
+`faq_feedback` adalah tabel pendahulu yang hanya menampung feedback FAQ. Isinya sudah dipindahkan ke `content_feedback` oleh migrasi `0005_add_content_feedback.sql`; tabel lamanya sengaja dibiarkan utuh sebagai cadangan dan tidak lagi ditulis oleh aplikasi.
+
+## 12. Hubungan dan aturan penghapusan
 
 | Parent          | Child           | Relasi      | Aturan                 |
 | --------------- | --------------- | ----------- | ---------------------- |
@@ -321,7 +366,7 @@ Menyimpan metadata video tutorial. File video tidak disimpan sebagai binary di P
 
 Penghapusan parent harus dilakukan dengan hati-hati karena data turunannya dapat ikut terhapus.
 
-## 12. Aturan slug
+## 13. Aturan slug
 
 Slug digunakan pada URL dan pencarian resource.
 
@@ -339,7 +384,7 @@ Ketentuan slug:
 - Harus unik pada tabelnya.
 - Tidak boleh berubah sembarangan setelah digunakan pada production.
 
-## 13. Fungsi `source_id`
+## 14. Fungsi `source_id`
 
 `source_id` menyimpan ID data dari sistem atau CMS INSW lama. Kolom ini berbeda dari `id` internal PostgreSQL.
 
@@ -357,7 +402,7 @@ Data sumber sudah ada → UPDATE
 
 Dengan cara ini, importer dapat dijalankan kembali tanpa membuat data yang sama berulang kali.
 
-## 14. Aturan data
+## 15. Aturan data
 
 - Hanya kategori dan subkategori dengan `is_active = true` yang ditampilkan.
 - Hanya topik dengan `is_active = true` yang ditampilkan.
@@ -372,7 +417,7 @@ Dengan cara ini, importer dapat dijalankan kembali tanpa membuat data yang sama 
 - Setiap FAQ harus terhubung ke topik yang valid.
 - `updated_at` harus diperbarui ketika data berubah.
 
-## 15. Constraint dan index
+## 16. Constraint dan index
 
 Constraint utama:
 
@@ -380,6 +425,7 @@ Constraint utama:
 - Unique constraint pada setiap `slug`.
 - Unique constraint pada `source_id` yang digunakan importer.
 - Foreign key untuk menjaga integritas hubungan antartabel.
+- `CHECK` constraint pada `content_feedback.content_type` agar nilainya hanya `faq`, `guide`, atau `tutorial`.
 
 Index yang direkomendasikan:
 
@@ -401,11 +447,13 @@ guides.slug
 guides.category_id
 tutorials.slug
 tutorials.category_id
+content_feedback.content_type + content_id
+content_feedback.created_at
 ```
 
 Untuk pencarian FAQ yang lebih besar, pertimbangkan PostgreSQL full-text search atau index trigram pada `question` dan `answer`.
 
-## 16. Pengelolaan schema dengan Drizzle
+## 17. Pengelolaan schema dengan Drizzle
 
 Lokasi schema:
 
@@ -429,7 +477,7 @@ Jika Drizzle menanyakan apakah tabel harus di-truncate saat menambah unique cons
 
 Untuk production, gunakan migration yang tersimpan di Git dan lakukan backup sebelum perubahan besar. Jangan mengandalkan `db:push` langsung pada database production.
 
-## 17. Seed dan importer
+## 18. Seed dan importer
 
 Data awal kategori, FAQ populer, panduan, dan tutorial dapat dimasukkan melalui script pada:
 
@@ -453,7 +501,7 @@ Nama script panduan dan tutorial mengikuti konfigurasi pada `server/package.json
 
 Importer FAQ membaca data sumber, memetakan hierarki, membersihkan HTML jawaban, lalu melakukan upsert menggunakan `source_id`.
 
-## 18. Environment variable
+## 19. Environment variable
 
 File lokal:
 
@@ -476,7 +524,7 @@ server/.env.example
 
 File `.env` asli tidak boleh dimasukkan ke GitHub.
 
-## 19. Keamanan dan operasional
+## 20. Keamanan dan operasional
 
 - Kredensial database disimpan melalui environment variable.
 - Password tidak ditulis langsung pada source code.
@@ -487,7 +535,7 @@ File `.env` asli tidak boleh dimasukkan ke GitHub.
 - Backup dilakukan sebelum migration besar atau import massal.
 - PDF, video, dan gambar tidak disimpan sebagai binary di PostgreSQL.
 
-## 20. Scope saat ini
+## 21. Scope saat ini
 
 Database ditujukan untuk konten publik Help Center. Login pengguna tidak diperlukan untuk membaca FAQ, panduan, atau tutorial.
 
@@ -501,7 +549,7 @@ sessions
 
 Autentikasi baru diperlukan apabila scope project ditambah dengan dashboard admin untuk mengelola konten.
 
-## 21. Pemeliharaan dokumentasi
+## 22. Pemeliharaan dokumentasi
 
 Dokumentasi ini harus diperbarui ketika:
 

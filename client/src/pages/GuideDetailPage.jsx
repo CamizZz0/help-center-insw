@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ExternalLink, FileText } from "lucide-react";
 import { getGuideBySlug } from "../services/api";
+import ContentFeedback from "../components/ContentFeedback";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import Breadcrumb from "../components/layout/Breadcrumb";
@@ -77,6 +78,13 @@ export default function GuideDetailPage() {
                                     Buka Panduan
                                     <ExternalLink size={18} />
                                 </a>
+
+                                <ContentFeedback
+                                    contentType="guide"
+                                    contentId={guide.id}
+                                    subject="panduan"
+                                    className="mt-8"
+                                />
                             </div>
                         </article>
                     )}

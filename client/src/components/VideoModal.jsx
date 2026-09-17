@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 
+import ContentFeedback from "./ContentFeedback";
+
 function getYoutubeEmbedUrl(videoUrl) {
     if (!videoUrl) return null;
     try {
@@ -29,7 +31,18 @@ function getYoutubeEmbedUrl(videoUrl) {
     }
 }
 
-export default function VideoModal({ open, onClose, videoUrl, title }) {
+/*
+ * `feedbackTutorialId` diisi bila feedback tutorial ingin ditampilkan di
+ * dalam modal, mis. saat video dibuka langsung dari daftar tutorial.
+ * Halaman detail tidak mengirimkannya karena di sana feedback sudah ada.
+ */
+export default function VideoModal({
+    open,
+    onClose,
+    videoUrl,
+    title,
+    feedbackTutorialId = null,
+}) {
     const embedUrl = getYoutubeEmbedUrl(videoUrl);
 
     useEffect(() => {
@@ -105,6 +118,17 @@ export default function VideoModal({ open, onClose, videoUrl, title }) {
                         </div>
                     )}
                 </div>
+
+                {Number.isSafeInteger(feedbackTutorialId) && (
+                    <div className="overflow-y-auto border-t border-white/10 bg-slate-950 px-4 py-4 sm:px-5">
+                        <ContentFeedback
+                            contentType="tutorial"
+                            contentId={feedbackTutorialId}
+                            subject="tutorial"
+                            tone="dark"
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );

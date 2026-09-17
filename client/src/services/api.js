@@ -150,9 +150,26 @@ export function searchHelpCenter(
     );
 }
 
-export function submitFaqFeedback(id, payload) {
-    return request(`/faqs/${encodeURIComponent(id)}/feedback`, {
+/*
+ * Feedback pengunjung untuk tiga jenis konten. Backend menyimpannya
+ * di satu tabel dengan pembeda jenis konten.
+ */
+const FEEDBACK_RESOURCES = {
+    faq: "faqs",
+    guide: "guides",
+    tutorial: "tutorials",
+};
+
+export function submitFeedback(contentType, id, payload) {
+    const resource =
+        FEEDBACK_RESOURCES[contentType] ?? FEEDBACK_RESOURCES.faq;
+
+    return request(`/${resource}/${encodeURIComponent(id)}/feedback`, {
         method: "POST",
         body: JSON.stringify(payload),
     });
+}
+
+export function submitFaqFeedback(id, payload) {
+    return submitFeedback("faq", id, payload);
 }

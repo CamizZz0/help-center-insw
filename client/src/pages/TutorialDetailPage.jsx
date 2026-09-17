@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, PlayCircle } from "lucide-react";
 import { getTutorialBySlug } from "../services/api";
+import ContentFeedback from "../components/ContentFeedback";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import Breadcrumb from "../components/layout/Breadcrumb";
@@ -99,6 +100,13 @@ export default function TutorialDetailPage() {
                                     <PlayCircle size={18} />
                                     Tonton Tutorial
                                 </button>
+
+                                <ContentFeedback
+                                    contentType="tutorial"
+                                    contentId={tutorial.id}
+                                    subject="tutorial"
+                                    className="mt-8"
+                                />
                             </div>
                         </article>
                     )}

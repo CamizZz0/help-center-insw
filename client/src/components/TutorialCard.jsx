@@ -68,6 +68,7 @@ export default function TutorialCard({ tutorial }) {
                 onClose={() => setOpen(false)}
                 videoUrl={tutorial.videoUrl}
                 title={tutorial.title}
+                feedbackTutorialId={tutorial.id}
             />
         </>
     );
